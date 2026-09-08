@@ -1,0 +1,17 @@
+subtitle: Fundamentos de Aprendizagem Automática
+author: Mário Antunes
+institute: Universidade de Aveiro
+date: 2026
+
+fontsize: 12pt
+linestretch: 1.25
+geometry: "a4paper, margin=2.5cm"
+
+mainfont: "Noto Serif"
+sansfont: "Noto Sans"
+monofont: "Noto Sans Mono"
+
+colorlinks: true
+urlcolor: "blue"
+linkcolor: "black"
+highlight-style: tango

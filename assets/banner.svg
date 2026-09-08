@@ -1,0 +1,122 @@
+<svg width="512" height="128" viewBox="0 0 512 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-faa-banner-long" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2E3440"/>
+    </marker>
+    <marker id="arrow-faa-banner-loop" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#4C566A"/>
+    </marker>
+  </defs>
+
+  <!-- Nord Light Background Card -->
+  <rect width="512" height="128" rx="16" fill="#ECEFF4"/>
+  <rect width="508" height="124" x="2" y="2" rx="14" fill="none" stroke="#D8DEE9" stroke-width="2"/>
+
+  <g transform="translate(0, 10)">
+
+    <!-- 1. DATA & PROCESS (Center at x=75, y=46) -->
+    <g transform="translate(75, 46)">
+      <text y="-34" text-anchor="middle" fill="#4C566A" font-family="monospace" font-size="9" font-weight="bold">DATA &amp; PROCESS</text>
+      
+      <!-- Container Circle (radius 26, boundaries x=49 to x=101) -->
+      <circle r="26" fill="#E5E9F0" stroke="#88C0D0" stroke-width="1.8"/>
+      
+      <!-- Scatter / Distribution & Fitting Curve -->
+      <g transform="translate(-1, 0)">
+        <path d="M -14 -14 V 14 H 14" fill="none" stroke="#88C0D0" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+        <path d="M -12 8 Q -2 -14 12 -4" fill="none" stroke="#5E81AC" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="-10" cy="10" r="1.8" fill="#BF616A"/>
+        <circle cx="-6" cy="2" r="2" fill="#A3BE8C"/>
+        <circle cx="-2" cy="-9" r="1.8" fill="#88C0D0"/>
+        <circle cx="3" cy="-7" r="2" fill="#A3BE8C"/>
+        <circle cx="8" cy="-5" r="1.8" fill="#88C0D0"/>
+        <circle cx="12" cy="-2" r="2" fill="#A3BE8C"/>
+        <circle cx="0" cy="1" r="1.6" fill="#EBCB8B"/>
+      </g>
+    </g>
+
+    <!-- Arrow 1: Data (x=103) -> Brain (x=216) -->
+    <!-- Perfectly aligned at y=46, spans the entire distance -->
+    <path d="M 104 46 H 213" fill="none" stroke="#2E3440" stroke-width="1.8" stroke-linecap="round" marker-end="url(#arrow-faa-banner-long)"/>
+    <!-- Small label pill -->
+    <rect x="136" y="32" width="46" height="9" rx="2" fill="#ECEFF4" stroke="#88C0D0" stroke-width="0.8"/>
+    <text x="159" y="39" text-anchor="middle" fill="#5E81AC" font-family="monospace" font-size="5.5" font-weight="bold">COMPRESSION</text>
+
+    <!-- 2. THE LEARNING BRAIN (Center at x=256, y=46) -->
+    <!-- Boundaries x=217 to x=295 -->
+    <g transform="translate(256, 46)">
+      <text y="-34" text-anchor="middle" fill="#5E81AC" font-family="monospace" font-size="9" font-weight="bold">LEARNING BRAIN</text>
+
+      <!-- Brain Container -->
+      <rect x="-38" y="-26" width="76" height="52" rx="10" fill="#E5E9F0" stroke="#5E81AC" stroke-width="1.8"/>
+
+      <!-- Left Hemisphere -->
+      <path d="M -1 -18 C -7 -18 -13 -17 -18 -12 C -23 -8 -23 1 -19 7 C -23 11 -22 17 -17 20 C -12 23 -5 22 -1 19 Z" fill="#81A1C1" stroke="#2E3440" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Right Hemisphere -->
+      <path d="M 1 -18 C 7 -18 13 -17 18 -12 C 23 -8 23 1 19 7 C 23 11 22 17 17 20 C 12 23 5 22 1 19 Z" fill="#5E81AC" stroke="#2E3440" stroke-width="1.5" stroke-linejoin="round"/>
+      
+      <!-- Fissure line -->
+      <line x1="0" y1="-17" x2="0" y2="19" stroke="#2E3440" stroke-width="1.2"/>
+
+      <!-- Neural Folds / Synapses -->
+      <path d="M -1 -10 C -12 -10 -15 -3 -13 2 C -11 8 -16 11 -13 16" fill="none" stroke="#ECEFF4" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M 1 -10 C 12 -10 15 -3 13 2 C 11 8 16 11 13 16" fill="none" stroke="#88C0D0" stroke-width="1.8" stroke-linecap="round"/>
+      
+      <!-- Synaptic Nodes -->
+      <circle cx="-13" cy="-5" r="2.5" fill="#ECEFF4" stroke="#2E3440" stroke-width="0.8"/>
+      <circle cx="13" cy="-5" r="2.5" fill="#88C0D0" stroke="#2E3440" stroke-width="0.8"/>
+      <circle cx="-10" cy="10" r="2.5" fill="#88C0D0" stroke="#2E3440" stroke-width="0.8"/>
+      <circle cx="10" cy="10" r="2.5" fill="#ECEFF4" stroke="#2E3440" stroke-width="0.8"/>
+      <circle cx="0" cy="-1" r="3" fill="#A3BE8C" stroke="#2E3440" stroke-width="1"/>
+    </g>
+
+    <!-- Arrow 2: Brain (x=297) -> Model (x=405) -->
+    <!-- Perfectly aligned at y=46, spans the entire distance -->
+    <path d="M 297 46 H 403" fill="none" stroke="#2E3440" stroke-width="1.8" stroke-linecap="round" marker-end="url(#arrow-faa-banner-long)"/>
+    <!-- Small label pill -->
+    <rect x="330" y="32" width="40" height="9" rx="2" fill="#ECEFF4" stroke="#D08770" stroke-width="0.8"/>
+    <text x="350" y="39" text-anchor="middle" fill="#D08770" font-family="monospace" font-size="5.5" font-weight="bold">INDUCTION</text>
+
+    <!-- 3. MODEL & AGENT (Center at x=435, y=46) -->
+    <g transform="translate(435, 46)">
+      <text y="-34" text-anchor="middle" fill="#D08770" font-family="monospace" font-size="9" font-weight="bold">MODEL &amp; AGENT</text>
+
+      <!-- Primary Gear (centered at y=0, perfectly aligned with incoming arrow at y=46) -->
+      <g transform="translate(-14, 0) scale(0.85)">
+        <circle r="16" fill="none" stroke="#4C566A" stroke-width="3.5"/>
+        <path d="M0 -21 V-16 M0 21 V16 M-21 0 H-16 M21 0 H16 M-14.8 -14.8 L-11.3 -11.3 M14.8 14.8 L11.3 11.3 M-14.8 14.8 L-11.3 11.3 M14.8 -14.8 L11.3 -11.3" stroke="#4C566A" stroke-width="3.5" stroke-linecap="round"/>
+        <circle r="6" fill="#4C566A"/>
+      </g>
+
+      <!-- Secondary Interlocking Gear -->
+      <g transform="translate(4, 15) scale(0.55) rotate(22.5)">
+        <circle r="16" fill="none" stroke="#81A1C1" stroke-width="3.5"/>
+        <path d="M0 -21 V-16 M0 21 V16 M-21 0 H-16 M21 0 H16 M-14.8 -14.8 L-11.3 -11.3 M14.8 14.8 L11.3 11.3 M-14.8 14.8 L-11.3 11.3 M14.8 -14.8 L11.3 -11.3" stroke="#81A1C1" stroke-width="3.5" stroke-linecap="round"/>
+        <circle r="6" fill="#81A1C1"/>
+      </g>
+
+      <!-- Robot Agent -->
+      <g transform="translate(18, -6)">
+        <!-- Antenna -->
+        <line x1="0" y1="-16" x2="0" y2="-11" stroke="#2E3440" stroke-width="1.5"/>
+        <circle cx="0" cy="-17" r="2.5" fill="#D08770"/>
+        <!-- Head -->
+        <rect x="-13" y="-11" width="26" height="20" rx="5" fill="#2E3440" stroke="#4C566A" stroke-width="1.5"/>
+        <!-- Visor -->
+        <rect x="-9" y="-7" width="18" height="8" rx="2" fill="#3B4252"/>
+        <!-- Eyes -->
+        <circle cx="-4.5" cy="-3" r="2" fill="#88C0D0"/>
+        <circle cx="4.5" cy="-3" r="2" fill="#88C0D0"/>
+        <!-- Bolts -->
+        <rect x="-15" y="-5" width="2" height="4" rx="1" fill="#81A1C1"/>
+        <rect x="13" y="-5" width="2" height="4" rx="1" fill="#81A1C1"/>
+      </g>
+    </g>
+
+    <!-- Feedback Return Loop (Bottom) -->
+    <path d="M 435 74 C 435 106, 75 106, 75 75" fill="none" stroke="#4C566A" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-faa-banner-loop)"/>
+    <rect x="176" y="94" width="160" height="9" rx="2" fill="#ECEFF4" stroke="#D8DEE9" stroke-width="0.8"/>
+    <text x="256" y="101" text-anchor="middle" fill="#4C566A" font-family="monospace" font-size="5.5" font-weight="bold">FEEDBACK &amp; OPTIMIZATION (MDL / LOSS)</text>
+
+  </g>
+</svg>

@@ -1,0 +1,86 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Nord Light Palette Background -->
+  <rect width="128" height="128" rx="24" fill="#ECEFF4"/>
+  <rect width="124" height="124" x="2" y="2" rx="22" fill="none" stroke="#D8DEE9" stroke-width="2"/>
+
+  <defs>
+    <marker id="arrow-faa-circ" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#4C566A"/>
+    </marker>
+  </defs>
+
+  <!-- PERFECT CIRCULAR CONNECTING ARROWS (Radius 36, Center 64,64) -->
+  <!-- 1. Brain -> Model (clockwise from 296 to 4 deg) -->
+  <path d="M 79.8 31.6 A 36 36 0 0 1 99.9 66.5" fill="none" stroke="#4C566A" stroke-width="1.8" stroke-linecap="round" marker-end="url(#arrow-faa-circ)"/>
+  
+  <!-- 2. Model -> Data (clockwise from 56 to 124 deg, dashed feedback) -->
+  <path d="M 84.1 93.8 A 36 36 0 0 1 43.9 93.8" fill="none" stroke="#4C566A" stroke-width="1.8" stroke-dasharray="3 2.5" stroke-linecap="round" marker-end="url(#arrow-faa-circ)"/>
+  
+  <!-- 3. Data -> Brain (clockwise from 176 to 244 deg) -->
+  <path d="M 28.1 66.5 A 36 36 0 0 1 48.2 31.6" fill="none" stroke="#4C566A" stroke-width="1.8" stroke-linecap="round" marker-end="url(#arrow-faa-circ)"/>
+
+  <!-- ELEMENT 1: BRAIN (Top at 64, 28) -->
+  <g transform="translate(64, 28)">
+    <!-- Base background disc -->
+    <circle r="15" fill="#E5E9F0" stroke="#5E81AC" stroke-width="1.5"/>
+    <!-- Left lobe -->
+    <path d="M -1 -11 C -5 -11 -9 -8 -9 -2 C -9 2 -7 5 -7 8 C -7 10 -4 11 -1 11 Z" fill="#81A1C1" stroke="#2E3440" stroke-width="1.2" stroke-linejoin="round"/>
+    <!-- Right lobe -->
+    <path d="M 1 -11 C 5 -11 9 -8 9 -2 C 9 2 7 5 7 8 C 7 10 4 11 1 11 Z" fill="#5E81AC" stroke="#2E3440" stroke-width="1.2" stroke-linejoin="round"/>
+    <!-- Center seam -->
+    <line x1="0" y1="-10" x2="0" y2="10" stroke="#2E3440" stroke-width="1"/>
+    <!-- Neural folds -->
+    <path d="M -1 -6 C -5 -6 -7 -3 -6 0 C -5 3 -7 5 -5 8" fill="none" stroke="#ECEFF4" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 1 -6 C 5 -6 7 -3 6 0 C 5 3 7 5 5 8" fill="none" stroke="#88C0D0" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- Nodes -->
+    <circle cx="-6" cy="-2" r="1.4" fill="#ECEFF4"/>
+    <circle cx="6" cy="-2" r="1.4" fill="#88C0D0"/>
+    <circle cx="0" cy="0" r="1.6" fill="#A3BE8C" stroke="#2E3440" stroke-width="0.6"/>
+  </g>
+
+  <!-- ELEMENT 2: MODEL & ROBOT (Bottom-Right at 95.2, 82) -->
+  <g transform="translate(95.2, 82)">
+    <!-- Base background disc -->
+    <circle r="15" fill="#E5E9F0" stroke="#D08770" stroke-width="1.5"/>
+    
+    <!-- Cog Wheel (Left side of circle) -->
+    <g transform="translate(-4, 3) scale(0.48)">
+      <circle r="14" fill="none" stroke="#4C566A" stroke-width="3.5"/>
+      <path d="M0 -18 V-14 M0 18 V14 M-18 0 H-14 M18 0 H14 M-12.7 -12.7 L-9.9 -9.9 M12.7 12.7 L9.9 9.9 M-12.7 12.7 L-9.9 9.9 M12.7 -12.7 L9.9 -9.9" stroke="#4C566A" stroke-width="3.5" stroke-linecap="round"/>
+      <circle r="5" fill="#4C566A"/>
+    </g>
+
+    <!-- Robot Agent (Right side of circle) -->
+    <g transform="translate(4, -3)">
+      <!-- Antenna -->
+      <line x1="0" y1="-8" x2="0" y2="-5" stroke="#2E3440" stroke-width="1.2"/>
+      <circle cx="0" cy="-8.5" r="1.2" fill="#D08770"/>
+      <!-- Head -->
+      <rect x="-6" y="-5" width="12" height="10" rx="2.5" fill="#2E3440" stroke="#4C566A" stroke-width="1"/>
+      <!-- Screen/Visor -->
+      <rect x="-4.5" y="-3" width="9" height="4.5" rx="1.2" fill="#3B4252"/>
+      <!-- Eyes -->
+      <circle cx="-2.2" cy="-0.8" r="1" fill="#88C0D0"/>
+      <circle cx="2.2" cy="-0.8" r="1" fill="#88C0D0"/>
+    </g>
+  </g>
+
+  <!-- ELEMENT 3: DATA & PROCESS (Bottom-Left at 32.8, 82) -->
+  <g transform="translate(32.8, 82)">
+    <!-- Base background disc -->
+    <circle r="15" fill="#E5E9F0" stroke="#88C0D0" stroke-width="1.5"/>
+    
+    <!-- Mini Axes -->
+    <path d="M -8 -8 V 8 H 8" fill="none" stroke="#88C0D0" stroke-width="1" stroke-linecap="round" opacity="0.8"/>
+    <!-- Regression / MDL Curve -->
+    <path d="M -7 5 Q -1 -8 7 -2" fill="none" stroke="#5E81AC" stroke-width="1.6" stroke-linecap="round"/>
+    <!-- Scatter Points -->
+    <circle cx="-6" cy="6" r="1.2" fill="#BF616A"/>
+    <circle cx="-3" cy="1" r="1.3" fill="#A3BE8C"/>
+    <circle cx="0" cy="-5" r="1.2" fill="#88C0D0"/>
+    <circle cx="3" cy="-4" r="1.3" fill="#A3BE8C"/>
+    <circle cx="6" cy="-2" r="1.2" fill="#88C0D0"/>
+    <circle cx="-1" cy="0" r="1.1" fill="#EBCB8B"/>
+  </g>
+
+</svg>

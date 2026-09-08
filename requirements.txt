@@ -1,0 +1,15 @@
+numpy>=2.0.0
+scipy>=1.13.0
+scikit-learn>=1.5.0
+matplotlib>=3.9.0
+seaborn>=0.13.0
+pandas>=2.2.0
+torch>=2.4.0
+torchvision>=0.19.0
+tqdm>=4.66.0
+jupyter>=1.0.0
+ipykernel>=6.29.0
+pyBlindOpt>=0.5.0
+emptyspacesearch>=0.7.0
+knee>=0.2.0
+requests>=2.32.0
