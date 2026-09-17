@@ -1,4 +1,6 @@
 \usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \usepackage{etoolbox}
 \usepackage{caption}
 \usepackage{amsmath}
@@ -10,3 +12,35 @@
 \AtBeginEnvironment{longtable}{\scriptsize}
 \AtBeginEnvironment{verbatim}{\scriptsize}
 \AtBeginEnvironment{Highlighting}{\scriptsize}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,decorations.pathreplacing,patterns,shadows,matrix,backgrounds}
+% Okabe-Ito colour-blind safe palette
+\definecolor{cblue}{HTML}{0072B2}
+\definecolor{corange}{HTML}{E69F00}
+\definecolor{cgreen}{HTML}{009E73}
+\definecolor{cred}{HTML}{D55E00}
+\definecolor{csky}{HTML}{56B4E9}
+\definecolor{cpurple}{HTML}{CC79A7}
+\definecolor{cgray}{HTML}{8C8C8C}
+\tikzset{
+  >={Stealth[length=2.2mm]},
+  every picture/.style={font=\footnotesize},
+  box/.style={draw, rounded corners=2pt, thick, align=center, inner sep=4pt, minimum height=7mm},
+  fillbox/.style={box, fill=#1!15, draw=#1!80!black},
+  flow/.style={->, thick},
+  dot/.style={circle, inner sep=0pt, minimum size=4pt, fill=#1},
+  dot/.default=cblue,
+  note/.style={font=\scriptsize, align=center, text=black!75},
+}
+\pgfplotsset{
+  faa/.style={
+    width=0.9\textwidth, height=5cm,
+    axis lines=left, tick label style={font=\scriptsize}, label style={font=\footnotesize},
+    legend style={font=\scriptsize, draw=none, fill=none}, legend cell align=left,
+    every axis plot/.append style={thick},
+    scaled ticks=false, yticklabel style={/pgf/number format/fixed}, xticklabel style={/pgf/number format/fixed},
+    nodes near coords style={/pgf/number format/fixed, /pgf/number format/precision=3},
+  },
+}
+\pgfmathsetseed{2026}
