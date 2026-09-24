@@ -20,6 +20,16 @@ repos:
 
   - repo: local
     hooks:
+      # Notebooks are committed clean: outputs, execution counts and run-specific metadata
+      # bloat the diffs and push executed notebooks past check-added-large-files (2 MB).
+      # nbstripout is installed once per machine (`uv tool install nbstripout`). It rewrites
+      # the file and fails the commit once; `git add` the cleaned notebook and commit again.
+      - id: nbstripout
+        name: strip notebook outputs
+        entry: nbstripout --extra-keys "metadata.language_info.version metadata.language_info.codemirror_mode metadata.language_info.pygments_lexer metadata.language_info.nbconvert_exporter metadata.language_info.file_extension metadata.language_info.mimetype metadata.widgets cell.metadata.execution cell.metadata.collapsed cell.metadata.scrolled"
+        language: system
+        files: '\.ipynb$'
+
       - id: ruff
         name: ruff check (python & notebooks)
         entry: ruff check
