@@ -80,6 +80,23 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 | Limitations and pitfalls | Under/overfitting and bias–variance; curse of dimensionality; No Free Lunch; data leakage; correlation vs. causation; shortcuts, distribution shift, sampling bias | [`03_pitfalls.ipynb`](notebooks/01-foundations/03_pitfalls.ipynb) — **D5–D10** |
 | Learning taxonomies | Supervised, unsupervised, semi-supervised, self-supervised, and reinforcement learning | [`04_taxonomies.ipynb`](notebooks/01-foundations/04_taxonomies.ipynb) — **D11** |
 
+
+### Class 02 — Blind vs. Gradient-Based Optimization
+
+**Slides:** [`slides/02_optimization.pdf`](slides/02_optimization.pdf) · **Lab guide:** [`practice/02_optimization.pdf`](practice/02_optimization.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| What is optimization? | Formal problem, numerical example, local/global minima, optimality conditions, curvature, eigenvalues and conditioning, convexity, common landscapes | — |
+| Optimization in ML | Training as empirical risk minimization with regularization, common losses, parameters vs. hyperparameters | — |
+| Gradient-based | Gradient descent and the learning rate, local minima, Newton's method, momentum, RMSProp, Adam, SGD | [`01_gradient_based.ipynb`](notebooks/02-optimization/01_gradient_based.ipynb) — **G1–G5** |
+| Automatic differentiation | JAX `grad`/`jit`/`vmap`/`hessian`, custom models and losses, differentiating through an ODE solver | [`01_gradient_based.ipynb`](notebooks/02-optimization/01_gradient_based.ipynb) — **G6** |
+| Blind optimization | Random search, hill climbing, simulated annealing; initialization (LHS, Sobol, OBL, QOBL, OBLESA); GA, DE, GWO/EGWO with pyBlindOpt | [`02_blind_optimization.ipynb`](notebooks/02-optimization/02_blind_optimization.ipynb) — **B1–B3** |
+| Comparing optimizers | Equal budgets, many seeds, noise, No Free Lunch, hybrid (memetic) search | [`02_blind_optimization.ipynb`](notebooks/02-optimization/02_blind_optimization.ipynb) — **B4–B5** |
+
+**Lab:** [`lab02_optimization.ipynb`](notebooks/02-optimization/lab02_optimization.ipynb) (helpers in `lab02_utils.py`); solved and explained in [`solutions/lab02_optimization_solution.ipynb`](solutions/lab02_optimization_solution.ipynb). Three problems (line fit, Rosenbrock, sinusoid fit): gradient descent by hand and with JAX, a genetic algorithm from scratch, pyBlindOpt initializations and optimizers, Newton's method, and a challenge that trains a classifier on the 0/1 loss.
+**Tools:** [pyOptViewer](https://github.com/mariolpantunes/pyOptViewer) animates every pyBlindOpt algorithm; *blindgame* lets students play the black-box optimizer (GECCO 2025 Fun Competition).
+
 ---
 
 ## 5. Evaluation
@@ -106,30 +123,36 @@ Students choose **one** of two modes.
 
 ## 6. Getting Started
 
-The notebooks run in a local virtual environment named `venv/` at the repository root.
+The notebooks run in a local virtual environment named `venv/` at the repository root. The dependencies are declared in `pyproject.toml`. The repository is not a Python package, so `pip install .` installs only the dependencies.
 
 ```bash
 git clone https://github.com/detiuaveiro/faa.git && cd faa
 export KERAS_BACKEND=jax          # add this line to ~/.bashrc
-python3 -m venv --system-site-packages venv
+make venv                         # Linux: NumPy compiled against the system OpenBLAS
 source venv/bin/activate
-pip install -r requirements.txt
-jupyter notebook notebooks/
+jupyter lab notebooks/
+```
+
+`make venv` needs a C compiler, `pkg-config` and the OpenBLAS headers (Debian/Ubuntu: `sudo apt install build-essential pkg-config libopenblas-dev`). It builds NumPy from source against the system OpenBLAS, tuned to the local CPU (`cpu-baseline=native`), then installs everything else. On any other system, use prebuilt wheels instead:
+
+```bash
+python3 -m venv venv && source venv/bin/activate
+pip install .
 ```
 
 **Software stack**
 
 | Role | Libraries |
 |:--|:--|
-| Acceleration | NumPy, JAX (`--system-site-packages` reuses a system NumPy built against an optimized OpenBLAS) |
+| Acceleration | NumPy (compiled against the system OpenBLAS by `make venv`), JAX |
 | Machine learning | scikit-learn; Keras 3 on the JAX backend (no TensorFlow or PyTorch) |
 | Parallelization | joblib |
 | Data handling | polars |
 | Plotting | matplotlib, seaborn |
 | Group libraries | pyBlindOpt, EmptySpaceSearch, kneeliverse, pyUTSAlgorithms, pyNNMF |
-| Presentation | Jupyter Notebook |
+| Presentation | JupyterLab |
 
-Linters and type checkers (`ruff`, `basedpyright`, `vulture`) are expected to be installed system-wide and are not listed in `requirements.txt`.
+Linters, type checkers and hook tools (`ruff`, `basedpyright`, `vulture`, `pre-commit`, `nbstripout`) are expected to be installed system-wide (e.g. `uv tool install nbstripout`) and are not listed in `pyproject.toml`.
 
 ---
 
@@ -140,11 +163,12 @@ Linters and type checkers (`ruff`, `basedpyright`, `vulture`) are expected to be
 | `slides/` | Lectures in Pandoc Markdown with inline TikZ figures, compiled to Beamer PDFs (`moloch` theme) |
 | `notebooks/` | Jupyter notebooks, one folder per class |
 | `practice/` | Lab guides in Pandoc Markdown, compiled to A4 PDFs |
+| `solutions/` | Solved lab notebooks with step-by-step explanations (try the lab first) |
 | `projects/` | Project specifications |
 | `assets/` | Logo, banner, and figures |
-| `Makefile`, `Makefile.inc` | Build system: `make all` compiles every PDF (intermediate files cached in `/dev/shm`) |
-| `.pre-commit-config.yaml` | Quality gate: formatting checks, `ruff` on notebooks, and a full build |
-| `requirements.txt` | Python dependencies |
+| `Makefile`, `Makefile.inc` | Build system: `make all` compiles every PDF (intermediate files cached in `/dev/shm`); `make venv` creates the Python environment |
+| `.pre-commit-config.yaml` | Quality gate: formatting checks, notebook outputs stripped (`nbstripout`), `ruff` on notebooks, and a full build |
+| `pyproject.toml` | Python dependencies (`pip install .`) and ruff/basedpyright configuration |
 
 ---
 
