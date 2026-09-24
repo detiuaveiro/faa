@@ -44,6 +44,11 @@ include = ["notebooks", "solutions"]
 venvPath = "."
 venv = "venv"
 
+[tool.vulture]
+# Only .py files are scanned: helpers used only from notebooks show up at 60% and stay below the floor.
+paths = ["notebooks", "solutions"]
+min_confidence = 80
+
 [tool.ruff]
 line-length = 120
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]

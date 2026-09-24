@@ -12,10 +12,10 @@
   <!-- PERFECT CIRCULAR CONNECTING ARROWS (Radius 36, Center 64,64) -->
   <!-- 1. Brain -> Model (clockwise from 296 to 4 deg) -->
   <path d="M 79.8 31.6 A 36 36 0 0 1 99.9 66.5" fill="none" stroke="#4C566A" stroke-width="1.8" stroke-linecap="round" marker-end="url(#arrow-faa-circ)"/>
-  
+
   <!-- 2. Model -> Data (clockwise from 56 to 124 deg, dashed feedback) -->
   <path d="M 84.1 93.8 A 36 36 0 0 1 43.9 93.8" fill="none" stroke="#4C566A" stroke-width="1.8" stroke-dasharray="3 2.5" stroke-linecap="round" marker-end="url(#arrow-faa-circ)"/>
-  
+
   <!-- 3. Data -> Brain (clockwise from 176 to 244 deg) -->
   <path d="M 28.1 66.5 A 36 36 0 0 1 48.2 31.6" fill="none" stroke="#4C566A" stroke-width="1.8" stroke-linecap="round" marker-end="url(#arrow-faa-circ)"/>
 
@@ -42,7 +42,7 @@
   <g transform="translate(95.2, 82)">
     <!-- Base background disc -->
     <circle r="15" fill="#E5E9F0" stroke="#D08770" stroke-width="1.5"/>
-    
+
     <!-- Cog Wheel (Left side of circle) -->
     <g transform="translate(-4, 3) scale(0.48)">
       <circle r="14" fill="none" stroke="#4C566A" stroke-width="3.5"/>
@@ -69,7 +69,7 @@
   <g transform="translate(32.8, 82)">
     <!-- Base background disc -->
     <circle r="15" fill="#E5E9F0" stroke="#88C0D0" stroke-width="1.5"/>
-    
+
     <!-- Mini Axes -->
     <path d="M -8 -8 V 8 H 8" fill="none" stroke="#88C0D0" stroke-width="1" stroke-linecap="round" opacity="0.8"/>
     <!-- Regression / MDL Curve -->

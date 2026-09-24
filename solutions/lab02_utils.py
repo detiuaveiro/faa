@@ -115,7 +115,7 @@ class Recorder:
         if optimizer is not None:
             self.pops.append(optimizer.pop.copy())
 
-    def __call__(self, epoch, scores, pop):
+    def __call__(self, _epoch, _scores, pop):
         self.pops.append(pop.copy())
 
     @classmethod

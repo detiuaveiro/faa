@@ -17,10 +17,10 @@
     <!-- 1. DATA & PROCESS (Center at x=75, y=46) -->
     <g transform="translate(75, 46)">
       <text y="-34" text-anchor="middle" fill="#4C566A" font-family="monospace" font-size="9" font-weight="bold">DATA &amp; PROCESS</text>
-      
+
       <!-- Container Circle (radius 26, boundaries x=49 to x=101) -->
       <circle r="26" fill="#E5E9F0" stroke="#88C0D0" stroke-width="1.8"/>
-      
+
       <!-- Scatter / Distribution & Fitting Curve -->
       <g transform="translate(-1, 0)">
         <path d="M -14 -14 V 14 H 14" fill="none" stroke="#88C0D0" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
@@ -54,14 +54,14 @@
       <path d="M -1 -18 C -7 -18 -13 -17 -18 -12 C -23 -8 -23 1 -19 7 C -23 11 -22 17 -17 20 C -12 23 -5 22 -1 19 Z" fill="#81A1C1" stroke="#2E3440" stroke-width="1.5" stroke-linejoin="round"/>
       <!-- Right Hemisphere -->
       <path d="M 1 -18 C 7 -18 13 -17 18 -12 C 23 -8 23 1 19 7 C 23 11 22 17 17 20 C 12 23 5 22 1 19 Z" fill="#5E81AC" stroke="#2E3440" stroke-width="1.5" stroke-linejoin="round"/>
-      
+
       <!-- Fissure line -->
       <line x1="0" y1="-17" x2="0" y2="19" stroke="#2E3440" stroke-width="1.2"/>
 
       <!-- Neural Folds / Synapses -->
       <path d="M -1 -10 C -12 -10 -15 -3 -13 2 C -11 8 -16 11 -13 16" fill="none" stroke="#ECEFF4" stroke-width="1.8" stroke-linecap="round"/>
       <path d="M 1 -10 C 12 -10 15 -3 13 2 C 11 8 16 11 13 16" fill="none" stroke="#88C0D0" stroke-width="1.8" stroke-linecap="round"/>
-      
+
       <!-- Synaptic Nodes -->
       <circle cx="-13" cy="-5" r="2.5" fill="#ECEFF4" stroke="#2E3440" stroke-width="0.8"/>
       <circle cx="13" cy="-5" r="2.5" fill="#88C0D0" stroke="#2E3440" stroke-width="0.8"/>

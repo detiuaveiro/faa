@@ -1,7 +1,21 @@
 # The CI gate, moved to commit time.
 #
-# Every Python hook below is `language: system`, calling tools already installed
-# in the environment and reading `pyproject.toml`.
+# Every hook is `language: system`, not a pinned mirror. A mirror would fetch its
+# own copy of ruff or basedpyright and run it against a config pre-commit chose,
+# which is how a repository ends up with hooks that pass and CI that fails.
+# These call the tools installed on the machine and let them read
+# `pyproject.toml`, so commit and CI run the same check with the same settings.
+#
+# `pass_filenames: false` on whole-project tools is deliberate. basedpyright and
+# vulture need to see every file: handed only the staged files, everything they
+# reference looks unreferenced or untyped.
+#
+# `files` rather than `types: [python]`: the hooks are driven by pyproject.toml
+# (ruff rules, basedpyright mode, vulture paths), so a commit that changes only
+# that file must still run them.
+#
+# CI (.github/workflows/ci.yml) runs the code checks: nbstripout, ruff,
+# basedpyright and vulture. The PDF build runs here only; CI checks code.
 #
 # Install with: pre-commit install
 # Run over everything once: pre-commit run --all-files
@@ -16,14 +30,14 @@ repos:
       - id: check-toml
       - id: check-merge-conflict
       - id: check-added-large-files
+        # Above the 512 KB template default: the compiled slide PDFs are committed.
         args: [--maxkb=2048]
 
   - repo: local
     hooks:
       # Notebooks are committed clean: outputs, execution counts and run-specific metadata
-      # bloat the diffs and push executed notebooks past check-added-large-files (2 MB).
-      # nbstripout is installed once per machine (`uv tool install nbstripout`). It rewrites
-      # the file and fails the commit once; `git add` the cleaned notebook and commit again.
+      # bloat the diffs and push executed notebooks past check-added-large-files.
+      # It rewrites the file and fails the commit once; `git add` it and commit again.
       - id: nbstripout
         name: strip notebook outputs
         entry: nbstripout --extra-keys "metadata.language_info.version metadata.language_info.codemirror_mode metadata.language_info.pygments_lexer metadata.language_info.nbconvert_exporter metadata.language_info.file_extension metadata.language_info.mimetype metadata.widgets cell.metadata.execution cell.metadata.collapsed cell.metadata.scrolled"
@@ -31,11 +45,29 @@ repos:
         files: '\.ipynb$'
 
       - id: ruff
-        name: ruff check (python & notebooks)
-        entry: ruff check
+        name: ruff (notebooks, solutions)
+        entry: ruff check notebooks solutions
         language: system
-        types_or: [python, jupyter]
+        files: '(\.py$|\.ipynb$|^pyproject\.toml$)'
+        pass_filenames: false
 
+      - id: basedpyright
+        name: basedpyright
+        # Reads the venv through [tool.basedpyright] venvPath/venv in pyproject.toml.
+        entry: basedpyright
+        language: system
+        files: '(\.py$|\.ipynb$|^pyproject\.toml$)'
+        pass_filenames: false
+
+      - id: vulture
+        name: vulture
+        # Paths and confidence come from [tool.vulture] in pyproject.toml.
+        entry: vulture
+        language: system
+        files: '(\.py$|^pyproject\.toml$)'
+        pass_filenames: false
+
+      # Local only: CI checks code, not the PDF build.
       - id: compile-materials
         name: compile course materials (pandoc / latexmk)
         entry: make all

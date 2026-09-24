@@ -1,0 +1,41 @@
+# CI gate. .pre-commit-config.yaml runs the same code checks at commit time:
+# change both in the same commit. The PDF build is a local hook only.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Tools pinned to the versions the pre-commit hooks run locally.
+      - name: Install system tools
+        run: pipx install ruff==0.16.6 basedpyright==1.39.10 vulture==2.16 nbstripout==0.9.1
+
+      # basedpyright reads ./venv (pyproject.toml): the course dependencies from PyPI wheels.
+      - name: Create venv
+        run: |
+          python -m venv venv
+          venv/bin/pip install -q --upgrade pip
+          venv/bin/pip install -q .
+
+      - name: Notebooks committed without outputs
+        run: git ls-files '*.ipynb' | xargs nbstripout --verify --extra-keys "metadata.language_info.version metadata.language_info.codemirror_mode metadata.language_info.pygments_lexer metadata.language_info.nbconvert_exporter metadata.language_info.file_extension metadata.language_info.mimetype metadata.widgets cell.metadata.execution cell.metadata.collapsed cell.metadata.scrolled"
+
+      - name: ruff
+        run: ruff check notebooks solutions
+
+      - name: basedpyright
+        run: basedpyright
+
+      - name: vulture
+        run: vulture
