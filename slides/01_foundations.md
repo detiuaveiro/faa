@@ -165,10 +165,9 @@ subtitle: "Class 01 — Learning as Compression, Pitfalls & Taxonomies"
 ```bash
 git clone https://github.com/detiuaveiro/faa.git && cd faa
 export KERAS_BACKEND=jax   # add to ~/.bashrc
-python3 -m venv --system-site-packages venv
+make venv                  # or: python3 -m venv venv && venv/bin/pip install .
 source venv/bin/activate
-pip install -r requirements.txt
-jupyter notebook notebooks/01-foundations/
+jupyter lab notebooks/01-foundations/
 ```
 
 * Today's demos in `notebooks/01-foundations/`:
@@ -185,7 +184,7 @@ jupyter notebook notebooks/01-foundations/
   \node[fill=cblue!20, draw=cblue] at (0,0) {\textbf{Acceleration:} NumPy (OpenBLAS) \quad JAX};
   \node[fill=corange!20, draw=corange] at (0,1) {\textbf{Models:} scikit-learn \quad Keras 3 (JAX backend) \quad joblib};
   \node[fill=cgreen!20, draw=cgreen] at (0,2) {\textbf{Data \& plots:} polars \quad matplotlib \quad seaborn};
-  \node[fill=cpurple!20, draw=cpurple] at (0,3) {\textbf{Presentation:} Jupyter Notebook};
+  \node[fill=cpurple!20, draw=cpurple] at (0,3) {\textbf{Presentation:} JupyterLab};
   \node[fill=cgray!15, draw=cgray] at (0,-1.3) {\textbf{Group libraries:} pyBlindOpt, EmptySpaceSearch,\\ kneeliverse, pyUTSAlgorithms, pyNNMF};
 \end{tikzpicture}
 \end{center}

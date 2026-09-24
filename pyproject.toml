@@ -1,28 +1,58 @@
+# Course materials, not a library: `pip install .` installs only the dependencies below
+# (no modules are packaged). Recommended on Linux: `make venv` (NumPy compiled against the
+# system OpenBLAS). Keras runs on JAX: export KERAS_BACKEND=jax.
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "faa"
-version = "0.1.0"
-description = "Support files, slides, and practical materials for Fundamentos de Aprendizagem Automática (FAA)"
+version = "2026.9"
+description = "Fundamentos de Aprendizagem Automática (UA 41010): slides, notebooks and labs"
 readme = "README.md"
-requires-python = ">=3.10"
-license = {text = "MIT"}
-authors = [
-    {name = "Mário Antunes", email = "mario.antunes@ua.pt"}
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{name = "Mário Antunes", email = "mario.antunes@ua.pt"}]
+dependencies = [
+    "numpy>=2.5.3",
+    "scipy>=1.18.1",
+    "jax>=0.11.2",
+    "scikit-learn>=1.9.1",
+    "keras>=3.15.1",
+    "joblib>=1.6.0",
+    "polars>=1.44.2",
+    "matplotlib>=3.11.2",
+    "seaborn>=0.13.2",
+    "tqdm>=4.70.1",
+    "pyBlindOpt>=0.5.0",
+    "emptyspacesearch>=0.7.1",
+    "kneeliverse>=1.2.0",
+    "pyUTSAlgorithms>=0.2.1",
+    "pyNNMF>=0.2.0",
+    "jupyterlab>=4.6.4",
+    "ipykernel>=7.3.0",
 ]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
+
+[tool.setuptools]
+packages = []
 
 [tool.basedpyright]
 typeCheckingMode = "basic"
 failOnWarnings = false
-include = ["notebooks"]
+include = ["notebooks", "solutions"]
+venvPath = "."
+venv = "venv"
 
 [tool.ruff]
 line-length = 120
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
+extend-exclude = ["venv*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Lab skeletons hand students imports and variables that only their TODO code uses.
+"notebooks/**/lab*.ipynb" = ["F401", "F841"]

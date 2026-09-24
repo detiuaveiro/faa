@@ -216,3 +216,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# AI agent helpers: instructions, working notes, plans and per-agent local state.
+.agent/
+PLAN.md
+CLAUDE.md
+AGENTS.md
+.claude/
+CLAUDE.local.md
+.goose/
+.goosehints
+.gemini/
+GEMINI.md
+.antigravity/
+.cursor/
+.cursorrules
+.codex/
+.aider*
+.github/copilot-instructions.md
+.windsurf/
+.windsurfrules
+.clinerules
+.continue/
