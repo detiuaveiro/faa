@@ -844,8 +844,8 @@ $$(1 - p)\,c_{FP} < p\,c_{FN} \quad\Longleftrightarrow\quad p > t^\star = \frac{
 ## References (1/2)
 
 * C. Bishop, *Pattern Recognition and Machine Learning*, 2006: chapters 1 and 2 (probability, MLE, Bayesian estimation), 4 (classification)
-* D. Barber, *Bayesian Reasoning and Machine Learning*, 2012: Naive Bayes, Bayesian estimation
-* G. James, D. Witten, T. Hastie, R. Tibshirani, J. Taylor, *An Introduction to Statistical Learning with Applications in Python*, 2023: Bayes classifier, Naive Bayes
+* D. Barber, *Bayesian Reasoning and Machine Learning*, 2012: chapters 9 (learning as inference: MLE, MAP) and 10 (Naive Bayes)
+* G. James, D. Witten, T. Hastie, R. Tibshirani, J. Taylor, *An Introduction to Statistical Learning with Applications in Python*, 2023: section 4.4 (generative models for classification, Naive Bayes), 4.5 (comparison of classifiers)
 * P. Domingos, M. Pazzani, "On the optimality of the simple Bayesian classifier under zero-one loss", *Machine Learning*, 1997
 
 ## References (2/2)

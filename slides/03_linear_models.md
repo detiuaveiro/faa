@@ -1296,7 +1296,7 @@ Ours: $\dfrac{337\cdot 526 - 32\cdot 26}{\sqrt{369 \cdot 363 \cdot 558 \cdot 552
 
 ## References (1/2)
 
-* G. James, D. Witten, T. Hastie, R. Tibshirani, J. Taylor, *An Introduction to Statistical Learning with Applications in Python*, 2023: linear models, regularization, classification
+* G. James, D. Witten, T. Hastie, R. Tibshirani, J. Taylor, *An Introduction to Statistical Learning with Applications in Python*, 2023: chapters 3 (linear regression), 4 (classification), 6 (regularization)
 * C. Bishop, *Pattern Recognition and Machine Learning*, 2006: chapters 3 and 4 (linear models)
 
 ## References (2/2)
