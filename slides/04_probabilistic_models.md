@@ -407,7 +407,7 @@ $$\log P(c \mid x) = \log P(c) + \sum_{j} \log P(x_j \mid c) - \log Z$$
 | `3d` | 2.01 | `hpl` | $-2.75$ |
 
 * Log ratio $= \log P(w \mid \text{spam}) / P(w \mid \text{ham})$: each word adds evidence independently; easy to inspect
-* "george", "cs", "hpl": the ham is one person's mailbox at HP Labs, a **dataset artifact** (shortcuts, Class 01)
+* "george", "hpl": the ham is the donors' own work e-mail (UCI: `george` and area code 650 flag non-spam), a **dataset artifact** (shortcuts, Class 01)
 * Bernoulli NB: test accuracy **0.893**, MCC **0.774**
 
 ## Continuous Features: Gaussian Naive Bayes

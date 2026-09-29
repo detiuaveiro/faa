@@ -68,9 +68,11 @@ repos:
         pass_filenames: false
 
       # Local only: CI checks code, not the PDF build.
+      # `make` rebuilds only the PDFs whose sources changed. The hook then stages the PDFs itself
+      # (`git add`), so a rebuild lands in the same commit instead of failing it as "files modified".
       - id: compile-materials
-        name: compile course materials (pandoc / latexmk)
-        entry: make all
+        name: compile course materials (pandoc / latexmk) and stage the PDFs
+        entry: bash -c 'make all && git add -- slides/*.pdf practice/*.pdf projects/*.pdf'
         language: system
         files: '(\.md$|\.tex$|\.bib$|Makefile|Makefile\.inc|config\.yml|defaults\.yml)$'
         pass_filenames: false

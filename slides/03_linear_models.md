@@ -1304,5 +1304,5 @@ Ours: $\dfrac{337\cdot 526 - 32\cdot 26}{\sqrt{369 \cdot 363 \cdot 558 \cdot 552
 * R. Tibshirani, "Regression shrinkage and selection via the lasso", *JRSS B*, 1996
 * H. Zou, T. Hastie, "Regularization and variable selection via the elastic net", *JRSS B*, 2005
 * D. Chicco, G. Jurman, "The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary classification evaluation", *BMC Genomics*, 2020
-* F. Rosenblatt, "The perceptron", *Psychological Review*, 1958
+* F. Rosenblatt, "The perceptron: a probabilistic model for information storage and organization in the brain", *Psychological Review*, 1958
 * M. Minsky, S. Papert, *Perceptrons*, 1969
