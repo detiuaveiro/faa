@@ -30,7 +30,7 @@ A topic may span more than one class.
 |:-:|:--|:-:|:--|
 | 1 | Learning as Compression and Optimization | 01, 02 | Entropy, Kolmogorov complexity, MDL; evaluation and pitfalls; blind (population-based) and gradient-based optimization, JAX |
 | 2 | Learning Taxonomies | 01 | Supervised, unsupervised, semi-supervised, self-supervised, and reinforcement learning |
-| 3 | Supervised: Linear and Probabilistic Models | 03, 04 | Linear and logistic regression, regularization; Bayes' rule, MLE/MAP, Naive Bayes |
+| 3 | Supervised: Linear and Probabilistic Models | 03, 04 | Perceptron, linear and logistic regression, polynomial features, regularization, splits and metrics; MLE/MAP, Naive Bayes for classification and regression (discrete and continuous features), calibration, cost-based decisions |
 | 4 | Supervised: SVM and Neural Networks | 05 | Maximum margin, kernels, SVR; perceptron, MLP, backpropagation |
 | 5 | Supervised: Decision Trees and KNN | 06 | Impurity, pruning, regression trees; distances, scaling, choosing $k$ |
 | 6 | Supervised: Ensemble Models | 07 | Bagging, random forests, boosting, stacking |
@@ -97,6 +97,37 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 **Lab:** [`lab02_optimization.ipynb`](notebooks/02-optimization/lab02_optimization.ipynb) (helpers in `lab02_utils.py`); solved and explained in [`solutions/lab02_optimization_solution.ipynb`](solutions/lab02_optimization_solution.ipynb). Three problems (line fit, Rosenbrock, sinusoid fit): gradient descent by hand and with JAX, a genetic algorithm from scratch, pyBlindOpt initializations and optimizers, Newton's method, and a challenge that trains a classifier on the 0/1 loss.
 **Tools:** [pyOptViewer](https://github.com/mariolpantunes/pyOptViewer) animates every pyBlindOpt algorithm; *blindgame* lets students play the black-box optimizer (GECCO 2025 Fun Competition).
 
+### Class 03 — Linear Models
+
+**Slides:** [`slides/03_linear_models.pdf`](slides/03_linear_models.pdf) · **Lab guide:** [`practice/03_linear_models.pdf`](practice/03_linear_models.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| Splitting and preparing data | Hold-out, stratified, k-fold, grouped, temporal; scaling on the training set only; skewed features | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R1** |
+| Linear regression | Least squares, normal equation, gradient descent with `jax.grad`, curvature and the learning rate, the probabilistic view | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R2** |
+| Regression metrics | MSE, RMSE, MAE, sMAPE, $R^2$; outliers, asymmetry, baselines | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R3** |
+| Polynomial features and regularization | Feature expansion and overfitting; ridge, lasso, elastic net; geometry, MAP view, paths, choosing $\lambda$ | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R4–R5** |
+| Perceptron | Update rule as a subgradient, convergence, XOR | [`02_perceptron_logistic.ipynb`](notebooks/03-linear-models/02_perceptron_logistic.ipynb) — **C1** |
+| Logistic regression | Sigmoid and log-odds, cross-entropy, regularization, non-linear boundaries, softmax | [`02_perceptron_logistic.ipynb`](notebooks/03-linear-models/02_perceptron_logistic.ipynb) — **C2, C4** |
+| Classification metrics | Confusion matrix, accuracy, precision, recall, $F_1$, MCC, thresholds | [`02_perceptron_logistic.ipynb`](notebooks/03-linear-models/02_perceptron_logistic.ipynb) — **C3** |
+
+**Data:** [Spambase](https://archive.ics.uci.edu/dataset/94/spambase) (spam detection) and California housing (house prices), stored as parquet in `data/`.
+**Lab:** [`lab03_linear_models.ipynb`](notebooks/03-linear-models/lab03_linear_models.ipynb) (helpers in `lab03_utils.py`): every model is a loss written with `jax.numpy`, trained with `jax.grad` and compared with its scikit-learn twin; solved and explained in [`solutions/lab03_linear_models_solution.ipynb`](solutions/lab03_linear_models_solution.ipynb).
+
+### Class 04 — Probabilistic Models
+
+**Slides:** [`slides/04_probabilistic_models.pdf`](slides/04_probabilistic_models.pdf) · **Lab guide:** [`practice/04_probabilistic_models.pdf`](practice/04_probabilistic_models.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| Maximum likelihood | Likelihood and NLL, Bernoulli and Gaussian MLE, losses as negative log-likelihoods | [`01_mle_map.ipynb`](notebooks/04-probabilistic-models/01_mle_map.ipynb) — **M1–M3** |
+| MAP | Beta prior and Laplace smoothing, Gaussian prior and ridge, the posterior of the weights | [`01_mle_map.ipynb`](notebooks/04-probabilistic-models/01_mle_map.ipynb) — **M4–M5** |
+| Naive Bayes, classification | Bayes' rule, independence, Bernoulli/categorical (discrete) and Gaussian (continuous) features, generative vs. discriminative | [`02_naive_bayes_classification.ipynb`](notebooks/04-probabilistic-models/02_naive_bayes_classification.ipynb) — **N1–N3** |
+| Naive Bayes, regression | Binned target with expected value; continuous target (linear-Gaussian, closed-form posterior); discrete features; correlated evidence | [`03_naive_bayes_regression.ipynb`](notebooks/04-probabilistic-models/03_naive_bayes_regression.ipynb) — **R1–R4** |
+| Probabilities and decisions | Log-loss, Brier score, reliability; Platt and isotonic calibration; cost-based thresholds | [`02_naive_bayes_classification.ipynb`](notebooks/04-probabilistic-models/02_naive_bayes_classification.ipynb) — **N4–N5** |
+
+**Lab:** [`lab04_probabilistic_models.ipynb`](notebooks/04-probabilistic-models/lab04_probabilistic_models.ipynb) (helpers in `lab04_utils.py`): MLE/MAP with `jax.grad`, Naive Bayes by counting, Naive Bayes regression, calibration and costs, each compared with its scikit-learn twin; solved and explained in [`solutions/lab04_probabilistic_models_solution.ipynb`](solutions/lab04_probabilistic_models_solution.ipynb).
+
 ---
 
 ## 5. Evaluation
@@ -162,6 +193,7 @@ Linters, type checkers and hook tools (`ruff`, `basedpyright`, `vulture`, `pre-c
 |:--|:--|
 | `slides/` | Lectures in Pandoc Markdown with inline TikZ figures, compiled to Beamer PDFs (`moloch` theme) |
 | `notebooks/` | Jupyter notebooks, one folder per class |
+| `data/` | Datasets used by the notebooks (parquet) |
 | `practice/` | Lab guides in Pandoc Markdown, compiled to A4 PDFs |
 | `solutions/` | Solved lab notebooks with step-by-step explanations (try the lab first) |
 | `projects/` | Project specifications |
