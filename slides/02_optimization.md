@@ -529,7 +529,7 @@ $f(x) = e^x - 2x$, $\;x^\star = \ln 2$, $\;x_0 = 2$
 \begin{axis}[faa, height=4.6cm, width=0.55\textwidth, xmin=-1.6, xmax=1.6, ymin=-3.4, ymax=2.2, xlabel={$x$}, ylabel={$y$}, legend pos=outer north east]
   \addplot[cgray!60, line width=6pt, domain=-1.5:1.48] {x^2}; \addlegendentry{valley floor $y = x^2$}
   \addplot[corange, mark=*, mark size=1.2pt] coordinates {(-1.20,1.00) (-0.51,0.27) (0.33,0.10) (0.60,0.36) (0.72,0.52) (0.79,0.63) (0.84,0.71) (0.88,0.77) (0.90,0.82) (0.92,0.85) (0.94,0.88)}; \addlegendentry{GD: 5000 steps (every 500th)}
-  \addplot[cred, thick, mark=*, mark size=1.8pt] coordinates {(-1.20,1.00) (-1.18,1.38) (0.76,-3.18) (0.76,0.58) (1.00,0.94) (1.00,1.00)}; \addlegendentry{Newton: 8 steps}
+  \addplot[cred, thick, mark=*, mark size=1.8pt] coordinates {(-1.20,1.00) (-1.18,1.38) (0.76,-3.18) (0.76,0.58) (1.00,0.94) (1.00,1.00)}; \addlegendentry{Newton: 5 steps}
   \addplot[only marks, mark=star, black, mark size=4pt, thick] coordinates {(1,1)};
 \end{axis}
 \end{tikzpicture}
@@ -1056,9 +1056,9 @@ $$T_t = \frac{T_0}{t + 1}$$
 \end{tikzpicture}
 ```
 
-$$c_j \sim \mathcal{U}\big(\ell_j - \alpha d_j,\; u_j + \alpha d_j\big)$$
+$$c_j \sim \mathcal{U}\big(\min(p_{1j}, p_{2j}) - \alpha d_j,\; \max(p_{1j}, p_{2j}) + \alpha d_j\big)$$
 
-$\alpha = 0.5$: children may land **outside** the parents, which keeps the population from shrinking too fast
+with $d_j = \lvert p_{1j} - p_{2j}\rvert$ and $\alpha = 0.5$: children may land **outside** the parents, which keeps the population from shrinking too fast
 :::
 ::::
 
