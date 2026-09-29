@@ -154,28 +154,33 @@ Students choose **one** of two modes.
 
 ## 6. Getting Started
 
-The notebooks run in a local virtual environment named `venv/` at the repository root. The dependencies are declared in `pyproject.toml`. The repository is not a Python package, so `pip install .` installs only the dependencies.
+The notebooks run in a local virtual environment named `venv/` at the repository root, **created with `make venv`**. Use the Makefile rather than installing packages by hand, so that everyone has the same environment. The dependencies are declared in `pyproject.toml`; the repository is not a Python package, so the install step only pulls the dependencies.
 
 ```bash
 git clone https://github.com/detiuaveiro/faa.git && cd faa
 export KERAS_BACKEND=jax          # add this line to ~/.bashrc
-make venv                         # Linux: NumPy compiled against the system OpenBLAS
+make venv                         # NumPy against the system OpenBLAS if available, else the wheel
 source venv/bin/activate
 jupyter lab notebooks/
 ```
 
-`make venv` needs a C compiler, `pkg-config` and the OpenBLAS headers (Debian/Ubuntu: `sudo apt install build-essential pkg-config libopenblas-dev`). It builds NumPy from source against the system OpenBLAS, tuned to the local CPU (`cpu-baseline=native`), then installs everything else. On any other system, use prebuilt wheels instead:
+`make venv` works on any system. If `pkg-config` finds OpenBLAS and a C/C++ compiler is installed, it builds NumPy from source against the system OpenBLAS, tuned to the local CPU (`cpu-baseline=native`); otherwise, or if that build fails, it falls back to the prebuilt NumPy wheel (bundled OpenBLAS, slightly slower on some CPUs). It then installs everything else. To enable the source build:
 
-```bash
-python3 -m venv venv && source venv/bin/activate
-pip install .
-```
+| System | Prerequisites |
+|:--|:--|
+| Debian/Ubuntu/WSL | `sudo apt install python3-venv build-essential pkg-config libopenblas-dev` |
+| macOS | `brew install openblas pkg-config` (Xcode command-line tools for the compiler) |
+| Slackware | `openblas` package |
+
+`make venv NUMPY_SOURCE=no` forces the wheel; `NUMPY_SOURCE=yes` forces the source build and fails if it does not work. Plain `python3 -m venv venv && source venv/bin/activate && pip install .` is equivalent to the wheel path.
+
+**If `make venv` fails or the notebooks do not run, notify the professor** ([`mario.antunes@ua.pt`](mailto:mario.antunes@ua.pt)) with your operating system, the output of `python3 --version` and the last lines of the error.
 
 **Software stack**
 
 | Role | Libraries |
 |:--|:--|
-| Acceleration | NumPy (compiled against the system OpenBLAS by `make venv`), JAX |
+| Acceleration | NumPy (OpenBLAS; compiled locally by `make venv` when possible), JAX |
 | Machine learning | scikit-learn; Keras 3 on the JAX backend (no TensorFlow or PyTorch) |
 | Parallelization | joblib |
 | Data handling | polars |

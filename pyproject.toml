@@ -1,6 +1,6 @@
 # Course materials, not a library: `pip install .` installs only the dependencies below
-# (no modules are packaged). Recommended on Linux: `make venv` (NumPy compiled against the
-# system OpenBLAS). Keras runs on JAX: export KERAS_BACKEND=jax.
+# (no modules are packaged). Recommended: `make venv` (NumPy compiled against the
+# system OpenBLAS when available, prebuilt wheel otherwise). Keras runs on JAX: export KERAS_BACKEND=jax.
 
 [build-system]
 requires = ["setuptools>=77"]
