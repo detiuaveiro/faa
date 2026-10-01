@@ -25,9 +25,9 @@ COLORS = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:b
 
 def _data_dir() -> Path:
     for parent in Path(__file__).resolve().parents:
-        if (parent / "data" / "spambase.parquet").exists():
-            return parent / "data"
-    raise FileNotFoundError("data/spambase.parquet not found: run the notebook from inside the repository")
+        if (parent / "datasets" / "spambase.csv.zst").exists():
+            return parent / "datasets"
+    raise FileNotFoundError("datasets/spambase.csv.zst not found: run the notebook from inside the repository")
 
 
 def load_housing() -> tuple[np.ndarray, np.ndarray, list[str]]:
@@ -36,7 +36,7 @@ def load_housing() -> tuple[np.ndarray, np.ndarray, list[str]]:
     `AveRooms`, `AveBedrms`, `Population` and `AveOccup` are replaced by their natural logarithm (they are extremely
     skewed). The target is capped at 5.0 in the original data.
     """
-    df = pl.read_parquet(_data_dir() / "california_housing.parquet")
+    df = pl.read_csv(_data_dir() / "california_housing.csv.zst")
     X = df.drop("MedHouseVal").to_numpy().astype(float)
     names = df.drop("MedHouseVal").columns
     for j, name in enumerate(names):
@@ -50,7 +50,7 @@ def load_spam() -> tuple[np.ndarray, np.ndarray, list[str]]:
 
     Returns the raw features; `y = 1` is spam.
     """
-    df = pl.read_parquet(_data_dir() / "spambase.parquet")
+    df = pl.read_csv(_data_dir() / "spambase.csv.zst")
     return df.drop("spam").to_numpy().astype(float), df["spam"].to_numpy().astype(int), df.drop("spam").columns
 
 
@@ -79,7 +79,7 @@ def compare(name: str, ours, theirs) -> None:
 
 
 def stratified_split(y: np.ndarray, test_frac: float, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
-    """(train_idx, test_idx) with the class proportions kept in both parts (Lab 03, A1)."""
+    """(train_idx, test_idx) with the class proportions kept in both parts (Lab 03, B1)."""
     test = []
     for c in np.unique(y):
         idx = rng.permutation(np.flatnonzero(y == c))
@@ -90,7 +90,7 @@ def stratified_split(y: np.ndarray, test_frac: float, rng: np.random.Generator) 
 
 
 def fit_standardizer(X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Per-column mean and standard deviation of the training set (a constant column gets 1) (Lab 03, A2)."""
+    """Per-column mean and standard deviation of the training set (a constant column gets 1) (Lab 03, C1)."""
     std = X.std(axis=0)
     return X.mean(axis=0), np.where(std == 0, 1.0, std)
 
@@ -152,7 +152,7 @@ def plot_learning_curves(sizes, curves: dict[str, list[float]]) -> None:
     _, ax = plt.subplots(figsize=(7, 3.5))
     for (label, values), color in zip(curves.items(), COLORS):
         ax.plot(sizes, values, "o-", color=color, label=label)
-    ax.set(xscale="log", xlabel="training examples", ylabel="test accuracy")
+    ax.set(xscale="log", xlabel="training examples (log)", ylabel="test accuracy")
     ax.legend()
     plt.show()
 

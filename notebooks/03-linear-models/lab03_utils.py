@@ -17,6 +17,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
+import seaborn as sns
 
 jax.config.update("jax_enable_x64", True)
 
@@ -25,9 +26,9 @@ COLORS = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:b
 
 def _data_dir() -> Path:
     for parent in Path(__file__).resolve().parents:
-        if (parent / "data" / "spambase.parquet").exists():
-            return parent / "data"
-    raise FileNotFoundError("data/spambase.parquet not found: run the notebook from inside the repository")
+        if (parent / "datasets" / "spambase.csv.zst").exists():
+            return parent / "datasets"
+    raise FileNotFoundError("datasets/spambase.csv.zst not found: run the notebook from inside the repository")
 
 
 def load_housing() -> tuple[np.ndarray, np.ndarray, list[str]]:
@@ -36,7 +37,7 @@ def load_housing() -> tuple[np.ndarray, np.ndarray, list[str]]:
     `AveRooms`, `AveBedrms`, `Population` and `AveOccup` are extremely skewed (a few districts have 1000+ people per
     house), so they are replaced by their natural logarithm. The target is capped at 5.0 in the original data.
     """
-    df = pl.read_parquet(_data_dir() / "california_housing.parquet")
+    df = pl.read_csv(_data_dir() / "california_housing.csv.zst")
     X = df.drop("MedHouseVal").to_numpy().astype(float)
     names = df.drop("MedHouseVal").columns
     for j, name in enumerate(names):
@@ -50,7 +51,7 @@ def load_spam() -> tuple[np.ndarray, np.ndarray, list[str]]:
 
     Returns the raw features; `y = 1` is spam.
     """
-    df = pl.read_parquet(_data_dir() / "spambase.parquet")
+    df = pl.read_csv(_data_dir() / "spambase.csv.zst")
     return df.drop("spam").to_numpy().astype(float), df["spam"].to_numpy().astype(int), df.drop("spam").columns
 
 
@@ -102,7 +103,7 @@ def plot_history(histories: dict[str, np.ndarray]) -> None:
     _, ax = plt.subplots(figsize=(7, 3.5))
     for (label, h), color in zip(histories.items(), COLORS):
         ax.plot(h, color=color, label=label)
-    ax.set(xlabel="step", ylabel="training loss", yscale="log")
+    ax.set(xlabel="step", ylabel="training loss (log)", yscale="log")
     ax.legend()
     plt.show()
 
@@ -112,7 +113,7 @@ def plot_degree_curve(degrees, train_err, test_err, ylabel: str = "MSE") -> None
     _, ax = plt.subplots(figsize=(7, 3.5))
     ax.plot(degrees, train_err, "o-", color="tab:blue", label="train")
     ax.plot(degrees, test_err, "o-", color="tab:red", label="test")
-    ax.set(xlabel="polynomial degree", ylabel=ylabel, yscale="log", xticks=list(degrees))
+    ax.set(xlabel="polynomial degree", ylabel=f"{ylabel} (log)", yscale="log", xticks=list(degrees))
     ax.legend()
     plt.show()
 
@@ -121,7 +122,7 @@ def plot_path(lams, coefs: np.ndarray, title: str = "") -> None:
     """Regularization path: every coefficient versus lambda. `coefs` has shape (len(lams), n_features)."""
     _, ax = plt.subplots(figsize=(7, 3.5))
     ax.plot(lams, coefs, lw=1)
-    ax.set(xscale="log", xlabel=r"$\lambda$", ylabel="coefficient", title=title)
+    ax.set(xscale="log", xlabel=r"$\lambda$ (log)", ylabel="coefficient", title=title)
     plt.show()
 
 
@@ -132,7 +133,7 @@ def plot_validation_curve(lams, train_err, val_err, ylabel: str = "MSE") -> None
     ax.plot(lams, val_err, "o-", color="tab:red", label="validation")
     best = int(np.argmin(val_err))
     ax.axvline(lams[best], color="tab:gray", ls="--", label=rf"best $\lambda$ = {lams[best]:.3g}")
-    ax.set(xscale="log", xlabel=r"$\lambda$", ylabel=ylabel)
+    ax.set(xscale="log", xlabel=r"$\lambda$ (log)", ylabel=ylabel)
     ax.legend()
     plt.show()
 
@@ -184,3 +185,43 @@ def kfold_indices(n: int, k: int, rng: np.random.Generator) -> list[tuple[np.nda
     """Shuffle `n` indices and cut them into `k` folds. Returns a list of `(train_idx, validation_idx)` pairs."""
     folds = np.array_split(rng.permutation(n), k)
     return [(np.concatenate([folds[j] for j in range(k) if j != i]), folds[i]) for i in range(k)]
+
+
+def plot_predictions(y: np.ndarray, y_hat: np.ndarray, title: str = "") -> None:
+    """Predicted against actual values (the diagonal is a perfect model) and the histogram of the residuals."""
+    _, axes = plt.subplots(1, 2, figsize=(10, 3.6))
+    axes[0].scatter(y, y_hat, s=3, alpha=0.3)
+    lo, hi = float(min(y.min(), y_hat.min())), float(max(y.max(), y_hat.max()))
+    axes[0].plot([lo, hi], [lo, hi], "k--")
+    axes[0].set(xlabel="actual", ylabel="predicted", title=title)
+    sns.histplot(y - y_hat, bins=40, ax=axes[1])
+    axes[1].set(xlabel="residual (actual - predicted)", title="residuals")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_weights(names: list[str], weights: dict[str, np.ndarray]) -> None:
+    """Horizontal bars of several weight vectors side by side (ours against scikit-learn's, for instance)."""
+    k = len(weights)
+    _, ax = plt.subplots(figsize=(7, 0.45 * len(names) * k / 2 + 1.5))
+    pos = np.arange(len(names))
+    for i, ((label, w), color) in enumerate(zip(weights.items(), COLORS)):
+        ax.barh(pos + (i - (k - 1) / 2) * 0.8 / k, np.asarray(w, dtype=float), height=0.8 / k, color=color, label=label)
+    ax.set(yticks=pos, yticklabels=names, xlabel="weight")
+    ax.axvline(0, color="black", lw=0.8)
+    ax.invert_yaxis()
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_cv_scores(scores: dict[str, np.ndarray], ylabel: str = "MCC") -> None:
+    """One box per model with every fold's score as a dot: the spread decides whether a ranking is real."""
+    _, ax = plt.subplots(figsize=(7, 3.5))
+    labels = list(scores)
+    values = [np.asarray(scores[k], dtype=float) for k in labels]
+    sns.boxplot(data=values, ax=ax, color="lightgray", fliersize=0)
+    sns.stripplot(data=values, ax=ax, color="tab:red", size=6)
+    ax.set(xticks=range(len(labels)), xticklabels=labels, ylabel=ylabel)
+    plt.tight_layout()
+    plt.show()

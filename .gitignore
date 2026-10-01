@@ -218,7 +218,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 # AI agent helpers: instructions, working notes, plans and per-agent local state.
-.agent/
+.agents/
 PLAN.md
 CLAUDE.md
 AGENTS.md

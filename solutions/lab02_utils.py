@@ -242,7 +242,7 @@ def plot_boxes(results, title="", ylabel="final loss", log=True):
     ax.boxplot([np.maximum(np.asarray(v), 1e-16) for v in results.values()], tick_labels=list(results))
     if log:
         ax.set_yscale("log")
-    ax.set(ylabel=ylabel, title=title)
+    ax.set(ylabel=f"{ylabel} (log)" if log else ylabel, title=title)
     ax.tick_params(axis="x", rotation=30)
     plt.tight_layout()
     plt.show()
