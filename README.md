@@ -103,15 +103,16 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 
 | Block | Contents | Demo notebook |
 |:--|:--|:--|
-| Splitting and preparing data | Hold-out, stratified, k-fold, grouped, temporal; scaling on the training set only; skewed features | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R1** |
-| Linear regression | Least squares, normal equation, gradient descent with `jax.grad`, curvature and the learning rate, the probabilistic view | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R2** |
-| Regression metrics | MSE, RMSE, MAE, sMAPE, $R^2$; outliers, asymmetry, baselines | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R3** |
-| Polynomial features and regularization | Feature expansion and overfitting; ridge, lasso, elastic net; geometry, MAP view, paths, choosing $\lambda$ | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R4–R5** |
-| Perceptron | Update rule as a subgradient, convergence, XOR | [`02_perceptron_logistic.ipynb`](notebooks/03-linear-models/02_perceptron_logistic.ipynb) — **C1** |
-| Logistic regression | Sigmoid and log-odds, cross-entropy, regularization, non-linear boundaries, softmax | [`02_perceptron_logistic.ipynb`](notebooks/03-linear-models/02_perceptron_logistic.ipynb) — **C2, C4** |
-| Classification metrics | Confusion matrix, accuracy, precision, recall, $F_1$, MCC, thresholds | [`02_perceptron_logistic.ipynb`](notebooks/03-linear-models/02_perceptron_logistic.ipynb) — **C3** |
+| Data visualization, cleaning, preprocessing, splitting | Look at the data first (histograms, scatter, correlations, maps); missing values and categories; why scaling and the logarithm matter; hold-out, stratified, k-fold, grouped, temporal splits | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R1** |
+| Linear regression | The pipeline (preprocessing + model); least squares, normal equation, gradient descent with `jax.grad`, curvature and the learning rate, the probabilistic view | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R2** |
+| Regression metrics | MSE, RMSE, MAE, sMAPE, $R^2$; outliers, asymmetry; baselines (mean, median, mode) | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R3** |
+| Polynomial features and regularization | Feature expansion and overfitting; ridge ($L_2$), lasso ($L_1$), elastic net; geometry, MAP view, paths, choosing $\lambda$ | [`01_linear_regression.ipynb`](notebooks/03-linear-models/01_linear_regression.ipynb) — **R4–R5** |
+| Perceptron | Update rule as a subgradient, convergence, XOR | [`02_perceptron.ipynb`](notebooks/03-linear-models/02_perceptron.ipynb) — **P1** |
+| Generalized linear models | Linear predictor, link and distribution; the canonical-link gradient | slides only (see the logistic notebook) |
+| Logistic regression | Sigmoid and log-odds, cross-entropy, regularization, non-linear boundaries, one class against the rest | [`03_logistic_regression.ipynb`](notebooks/03-linear-models/03_logistic_regression.ipynb) — **L1–L3** |
+| Classification metrics | Confusion matrix, accuracy, precision, recall, $F_1$, MCC, thresholds | [`04_classification_metrics.ipynb`](notebooks/03-linear-models/04_classification_metrics.ipynb) — **C1** |
 
-**Data:** [Spambase](https://archive.ics.uci.edu/dataset/94/spambase) (spam detection) and California housing (house prices), stored as parquet in `data/`.
+**Data:** [Spambase](https://archive.ics.uci.edu/dataset/94/spambase) (spam detection) and California housing (house prices), stored in [`datasets/`](datasets/) with the other datasets of the course (compressed CSV, see below).
 **Lab:** [`lab03_linear_models.ipynb`](notebooks/03-linear-models/lab03_linear_models.ipynb) (helpers in `lab03_utils.py`): every model is a loss written with `jax.numpy`, trained with `jax.grad` and compared with its scikit-learn twin; solved and explained in [`solutions/lab03_linear_models_solution.ipynb`](solutions/lab03_linear_models_solution.ipynb).
 
 ### Class 04 — Probabilistic Models
@@ -140,8 +141,8 @@ Students choose **one** of two modes.
 |:--|:-:|:--|
 | Theoretical Test 1 | 25% | Class 08 (05/06 Nov 2026), Topics 1–6 |
 | Theoretical Test 2 | 25% | Class 14 (17/18 Dec 2026), Topics 7–10 |
-| Project 1 | 25% | Released Class 03 (01/02 Oct), due Class 08 (05/06 Nov) |
-| Project 2 | 25% | Released Class 09 (12/13 Nov), due Class 14 (17/18 Dec) |
+| [Project 1](projects/project01.pdf): the five classes of learners | 25% | Released Class 03 (01/02 Oct), due Class 08 (05/06 Nov) |
+| [Project 2](projects/project02.pdf): a game-playing agent | 25% | Released Class 09 (12/13 Nov), due Class 14 (17/18 Dec) |
 
 ### Final Evaluation
 
@@ -198,7 +199,7 @@ Linters, type checkers and hook tools (`ruff`, `basedpyright`, `vulture`, `pre-c
 |:--|:--|
 | `slides/` | Lectures in Pandoc Markdown with inline TikZ figures, compiled to Beamer PDFs (`moloch` theme) |
 | `notebooks/` | Jupyter notebooks, one folder per class |
-| `data/` | Datasets used by the notebooks (parquet) |
+| `datasets/` | Real, small datasets as zstd-compressed CSV (`*.csv.zst`, read directly with `polars.read_csv`); sources and columns in `datasets/README.md` |
 | `practice/` | Lab guides in Pandoc Markdown, compiled to A4 PDFs |
 | `solutions/` | Solved lab notebooks with step-by-step explanations (try the lab first) |
 | `projects/` | Project specifications |

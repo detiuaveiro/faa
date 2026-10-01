@@ -15,7 +15,6 @@ subtitle: "Class 03 — Linear Models"
   \node[fillbox=corange, text width=2.4cm, right=14mm of l] (o) {\textbf{optimizer}\\ finds $\theta^\star$};
   \draw[flow] (m) -- node[above, note] {scored by} (l);
   \draw[flow] (o) -- node[above, note] {minimizes} (l);
-  \node[note, below=4mm of l, text width=9cm] {Class 02: the optimizers (gradient descent, JAX). Class 03: the first \emph{models} and their \emph{losses}};
 \end{tikzpicture}
 \end{center}
 ```
@@ -39,7 +38,6 @@ subtitle: "Class 03 — Linear Models"
 * All three are trained with **`jax.grad`** in the lab: we write the loss, JAX gives the gradient
 * Polynomial features and regularization can be added to any of them
 * Every one is compared with its **scikit-learn** twin: same split, same scaling, a printed difference
-* Next class: the **probabilistic** view of the same models, and Naive Bayes
 
 ## Two Datasets
 
@@ -64,41 +62,293 @@ subtitle: "Class 03 — Linear Models"
 :::
 ::::
 
-* Real, noisy, small: every demo runs in seconds (`data/*.parquet`, read with polars)
+* Real, noisy, small: every demo runs in seconds (`datasets/*.csv.zst`, read with polars)
 
-## Map of the Class
+## Project 1 Is Released
+
+* **The five classes of learners:** symbolists, connectionists, evolutionaries, Bayesians, analogizers
+* Pick **one dataset** (suggestions in `datasets/`, classification or regression) and **one learner per class**; justify every choice
+* Today's tools are what the report is judged on: data visualization, evaluation methodology, preprocessing, the right metrics
+* Submission: the code and a `README.md` with identification, models, dataset, methodology, evaluation and conclusion, **with plots and diagrams**
+* Specification: `projects/project01.pdf`; due at Class 08
+
+# Data, Methodology and Preprocessing
+
+## Three Steps Before Any Model
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}[node distance=5mm]
-  \node[fillbox=cgray, text width=1.4cm] (d) {\textbf{data}\\ split, scale};
-  \node[fillbox=cblue, text width=2.2cm, right=of d] (r) {\textbf{regression}\\ linear, poly, ridge/lasso};
-  \node[fillbox=cred, text width=2.2cm, right=of r] (c) {\textbf{classes}\\ perceptron, logistic};
-  \node[fillbox=corange, text width=9.4cm, below=5mm of r, xshift=1.2cm] (e) {\textbf{evaluation:} regression metrics (MSE, MAE, sMAPE, $R^2$) $\cdot$ classification metrics (CM, precision, recall, F1, MCC)};
-  \draw[flow] (d) -- (r); \draw[flow] (r) -- (c);
+  \node[fillbox=cblue, text width=2.3cm] (v) {\textbf{1. Data}\\ \textbf{visualization}\\ look first};
+  \node[fillbox=corange, text width=2.3cm, right=of v] (m) {\textbf{2. Evaluation}\\ \textbf{methodology}\\ split, metric};
+  \node[fillbox=cgreen, text width=2.3cm, right=of m] (p) {\textbf{3.}\\ \textbf{Preprocessing}\\ training only};
+  \node[fillbox=cred, text width=1.1cm, right=of p] (mo) {\textbf{models}\\ fit, tune};
+  \draw[flow] (v) -- (m); \draw[flow] (m) -- (p); \draw[flow] (p) -- (mo);
 \end{tikzpicture}
 \end{center}
 ```
 
-* **Lecture (1 h):** models, losses, metrics, splits, regularization
-* **Demos:** `01_linear_regression`, `02_perceptron_logistic` (notebooks R1--R5, C1--C4)
-* **Lab (2 h):** build the models in JAX, compare each with scikit-learn
+* **Data visualization:** the target, the features, their relations; every plot ends in a **decision** (a logarithm, a metric, a split)
+* **Evaluation methodology:** fixed *before* the results: the split, the metric that matches the cost of errors, a baseline, the spread
+* **Preprocessing:** whatever is learned from data (means, vocabularies, imputed values) is fitted on the **training part only**
+* The same three steps for **both** datasets, in this order
 
-## Project 1 Is Released
-
-* **Tribal benchmark:** compare models from the five tribes on classification and regression tasks
-* Today's models: the perceptron is the seed of the **Connectionist** tribe; next class covers the **Bayesians**
-* The evaluation protocol of this class (splits, scaling, metrics, regularization) is what the report will be judged on
-* Specification: `projects/project01.pdf`; due at Class 08
-
-# Splitting and Preparing Data
-
-## Why Hold Out Data?
+## What Does the Target Look Like?
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4cm, width=0.7\textwidth, xmin=1, xmax=4, ymin=1e-4, ymax=1e5, ymode=log, xtick={1,2,3,4}, xlabel={polynomial degree}, ylabel={MSE}, legend pos=north west]
+\begin{axis}[faa, ybar, width=0.62\textwidth, height=3.1cm, bar width=14pt, xmin=0, xmax=5.7, ymin=0, ymax=4800, xtick={0,1,2,3,4,5}, ytick={0,2000,4000}, xlabel={median house value (100 000 USD)}, ylabel={districts}]
+  \addplot[fill=cblue!55, draw=cblue] coordinates {(0.25,199) (0.75,3397) (1.25,3960) (1.75,4329) (2.25,2926) (2.75,1963) (3.25,1214) (3.75,881) (4.25,477) (4.75,302)};
+  \addplot[fill=cred!70, draw=cred] coordinates {(5.25,992)};
+  \node[font=\scriptsize, cred, anchor=south east, align=center] at (axis cs:5.7,1400) {capped:\\ 992};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* A **histogram** counts the examples per range of values: the *shape* of what we predict
+* A long tail lets a few rows dominate the squared error; a pile-up means **censored** data
+* Here: right-skewed, with a **wall at 5.0** (992 districts, 4.8%): the price was capped, no model can see above it
+
+## What Does One Feature Look Like?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, ybar, width=0.62\textwidth, height=3.1cm, bar width=14pt, xmin=0, xmax=6.6, ymin=0, ymax=12500, xtick={0,1,2,3,4,5,6}, xticklabels={0,1,2,3,4,5,6+}, ytick={0,5000,10000}, xlabel={people per house (\texttt{AveOccup})}, ylabel={districts}]
+  \addplot[fill=cblue!55, draw=cblue] coordinates {(0.25,0) (0.75,3) (1.25,149) (1.75,1481) (2.25,4403) (2.75,6581) (3.25,4319) (3.75,1954) (4.25,978) (4.75,426) (5.25,161) (5.75,70) (6.25,115)};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* The same histogram, now for an **input**: the average number of people per house
+* It reveals scale and **outliers**: least squares, distances and penalties all react to a few extreme rows
+* Here: the median is 2.8 and 92% of the districts are below 4, but the maximum is **1243**, 441 times the median
+
+## Does a Feature Predict the Target?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, width=0.62\textwidth, height=3.1cm, only marks, mark=*, mark size=0.6pt, mark options={fill=cblue, draw=cblue, opacity=0.5}, xmin=0, xmax=12, ymin=0, ymax=5.4, xlabel={median income (10 000 USD)}, ylabel={median value}]
+  \addplot coordinates {(2.82,1.83) (4.36,4.69) (2.80,0.88) (3.97,1.12) (6.09,2.98) (3.67,1.38) (2.55,0.96) (2.38,1.28) (5.74,3.09) (4.76,1.91) (3.81,1.39) (1.64,0.60) (3.78,1.84) (1.31,1.36) (2.50,0.89) (2.10,1.88) (3.80,2.05) (1.62,0.79) (3.75,1.62) (4.07,2.12) (3.94,1.43) (3.96,3.46) (2.66,1.75) (1.81,1.17) (4.74,2.63) (1.88,0.66) (3.10,1.40) (6.75,2.04) (2.87,2.45) (4.18,4.87) (6.26,3.07) (4.28,2.38) (3.14,1.37) (6.58,3.49) (4.61,1.84) (3.61,1.15) (3.16,1.30) (4.76,1.38) (2.82,1.10) (4.80,2.62) (3.96,1.61) (4.89,1.78) (3.35,1.80) (1.83,2.25) (2.25,1.15) (2.18,1.62) (4.41,2.82) (3.64,3.28) (4.86,2.66) (1.96,0.75) (3.18,1.26) (2.76,0.72) (2.85,0.41) (2.73,1.49) (3.36,4.20) (8.54,4.51) (6.07,3.12) (4.32,1.30) (5.84,2.17) (2.95,1.49) (5.59,2.09) (6.58,2.45) (1.92,0.94) (3.98,1.89) (4.60,2.42) (5.87,4.04) (2.52,3.50) (5.02,3.24) (5.21,2.02) (4.40,1.52) (3.94,2.13) (1.76,2.06) (2.37,2.19) (9.07,3.67) (7.52,2.92) (6.68,4.11) (5.58,2.18) (3.47,1.39) (5.62,3.17) (3.18,2.50) (2.55,0.92) (6.31,2.59) (1.45,0.71) (3.14,0.75) (3.54,0.87) (5.57,3.43) (2.02,1.88) (5.07,2.34) (4.79,2.91) (4.73,1.65) (6.81,3.28) (1.56,0.82) (2.28,0.79) (4.75,2.96) (3.58,1.10) (3.17,1.10) (2.63,0.66) (3.98,2.67) (3.64,1.47) (2.93,2.76) (15.00,5.00) (5.13,3.46) (2.22,1.81) (5.02,1.65) (6.58,4.08) (4.22,1.76) (4.24,1.57) (4.98,2.09) (2.82,1.68) (2.45,1.53) (2.81,0.95) (4.04,1.33) (3.16,1.38) (3.24,1.18) (4.23,1.67) (5.63,2.73) (4.58,3.27) (2.39,0.82) (3.83,1.49) (3.23,2.19) (3.35,4.93) (2.36,1.28) (1.81,0.59) (1.99,2.25) (5.34,2.70) (5.96,3.51) (3.85,3.19) (6.50,4.84) (2.69,1.96) (3.29,2.32) (3.39,0.82) (3.55,2.71) (2.36,1.98) (3.25,2.31) (3.58,0.93) (3.03,2.19) (3.46,2.17) (6.18,2.30) (1.83,1.38) (2.67,1.53) (2.56,0.77) (6.54,2.73) (3.23,1.62) (8.19,5.00) (6.47,3.48) (3.26,1.24) (2.32,1.59) (1.76,0.55) (1.93,1.12) (4.78,1.01) (4.38,3.41) (8.77,3.66) (3.52,2.65) (3.74,3.20) (2.41,2.14) (3.94,1.37) (4.43,1.58) (2.60,1.22) (3.24,2.12) (5.22,2.14) (2.94,3.04) (2.29,2.34) (3.18,0.85) (6.03,2.89) (4.18,3.64) (2.64,2.41) (2.95,1.28) (3.25,3.55) (2.88,1.97) (3.62,1.56) (1.90,0.93) (2.79,1.18) (7.38,1.72) (5.94,4.22) (2.46,1.57) (4.55,2.81) (2.28,2.47) (4.37,2.26) (2.34,1.71) (1.53,0.51) (3.87,2.32) (1.37,0.52) (4.72,2.90) (2.28,0.59) (2.79,1.11) (5.03,2.11) (4.39,2.31) (5.13,3.42) (4.51,1.13) (4.11,1.16) (4.12,2.33) (1.99,2.62) (0.96,0.60) (2.81,0.83) (15.00,5.00) (2.62,1.49) (8.08,3.81) (1.63,1.62) (1.71,1.08) (6.33,5.00) (7.64,5.00) (0.71,1.38) (3.24,2.53) (1.62,0.47) (4.06,1.42) (3.72,2.30) (4.05,2.86) (1.93,3.00) (3.53,1.52) (3.46,1.45) (3.37,0.98) (4.61,1.39) (8.74,5.00) (2.71,1.66) (5.34,1.61) (3.07,4.12) (3.09,1.10) (8.27,5.00) (10.40,5.00) (1.71,0.52) (2.32,0.92) (2.97,1.53) (1.26,0.85) (6.80,3.25) (7.13,2.79) (6.59,3.29) (5.30,2.55) (5.48,2.09) (5.04,2.24) (2.42,1.93) (4.67,2.23) (3.40,2.16) (4.70,1.74) (2.31,1.54) (4.56,1.27) (2.95,0.83) (2.75,0.97) (5.25,1.61) (8.27,3.74) (4.89,3.34) (6.42,4.47) (1.62,0.50) (2.27,0.89) (3.75,0.87) (3.41,0.83) (3.73,2.61) (2.67,2.59) (2.23,2.38) (6.78,5.00) (3.43,4.57) (3.50,2.32) (2.19,1.44) (3.70,1.78) (2.62,1.01) (2.61,0.94) (4.12,0.88) (2.23,0.38) (3.94,1.71) (3.70,1.75) (3.97,3.00) (3.21,1.05) (3.28,1.95) (5.21,2.41) (4.02,0.88) (1.95,0.90) (7.07,3.36) (0.50,0.57) (2.44,0.79) (1.69,0.88) (2.02,0.58) (4.12,1.60) (3.17,1.25) (3.54,0.71) (3.35,2.21) (3.36,1.94) (4.64,2.17) (6.37,2.42) (3.76,1.84) (5.43,2.23) (2.83,2.57) (2.63,1.71) (8.04,3.82) (3.14,3.50) (4.52,4.46) (7.41,3.74) (4.48,3.41) (4.29,1.85) (4.06,1.60) (3.20,1.80) (6.10,3.44) (4.18,3.50) (2.16,0.86) (2.48,1.36) (3.52,1.15) (5.92,2.39) (1.62,1.30) (2.52,1.19) (2.36,1.12) (5.28,3.33) (5.98,2.45) (6.45,2.71) (5.48,2.96) (2.38,1.22) (3.35,2.94) (7.92,5.00) (2.84,1.82) (4.98,1.58) (2.33,5.00) (3.81,1.61) (5.62,2.72) (2.61,0.70) (3.68,1.36) (2.58,1.33) (9.15,4.19) (2.06,1.20) (2.53,1.23) (5.29,3.56) (6.83,3.84) (1.44,1.03) (15.00,1.31) (3.22,1.26) (5.92,2.37) (3.29,1.29) (1.04,0.62) (3.03,1.04) (3.35,2.20) (8.15,5.00) (4.05,1.82) (4.74,4.19) (5.13,1.82) (3.42,1.38) (0.94,1.12) (3.08,3.38) (5.37,2.61) (5.19,1.54) (5.74,3.98) (2.53,0.62) (5.29,2.65) (1.60,1.01) (2.72,0.85) (4.14,2.12) (1.40,1.05) (1.84,0.63) (8.96,4.00) (6.64,2.96) (2.31,0.62) (1.71,1.07) (2.97,1.63) (3.72,3.33) (2.78,1.29) (5.05,3.95) (4.49,2.19) (1.60,0.81) (4.74,2.17) (4.66,1.59) (2.88,1.12) (1.60,1.69) (3.60,4.64) (7.62,5.00) (4.11,2.80) (5.08,2.19) (3.38,4.00) (3.58,1.78) (5.58,2.35) (4.58,2.12) (2.93,2.58) (4.99,2.62) (2.02,0.90) (6.16,2.78) (5.59,1.68) (2.44,1.88) (4.02,1.39) (1.99,1.65) (5.63,2.31) (4.95,5.00) (4.90,1.51) (2.31,1.39) (5.50,2.80) (5.29,4.55) (3.33,2.71) (4.42,2.15) (2.56,1.29) (3.69,1.11) (3.86,1.23) (0.86,0.25) (5.00,2.83) (4.86,2.03) (12.44,5.00) (2.81,1.58) (5.40,5.00) (3.60,1.33) (1.55,0.54) (2.18,1.02) (3.59,1.78) (6.19,2.67) (4.80,1.33) (2.96,2.04) (2.12,1.75) (5.41,2.66) (3.39,4.71) (3.36,1.03) (2.29,5.00) (2.54,1.09) (4.10,2.12) (2.72,0.70) (2.65,1.25) (1.75,0.68) (5.09,2.62) (5.62,2.75) (3.99,5.00) (5.90,3.51) (2.73,1.63) (3.96,2.06) (7.34,3.67) (4.60,2.21) (1.73,2.88) (3.20,1.72) (5.17,2.63) (3.98,1.62) (4.93,1.80) (4.40,2.27) (3.30,2.23) (2.58,1.60) (4.41,2.39) (2.60,1.73) (3.50,2.17) (1.51,0.88) (5.09,1.48) (4.06,2.75) (3.58,2.46) (2.80,1.52) (5.36,2.36) (2.95,1.85) (5.02,1.90) (6.68,2.75) (3.00,0.71) (3.33,1.23) (8.16,3.48) (2.72,0.65) (2.94,1.16) (4.53,3.07) (3.92,1.54) (1.62,0.85) (6.61,3.12) (6.07,2.47) (4.56,1.84) (2.66,1.80) (5.55,2.08) (2.44,1.62) (2.86,2.06)};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* A **scatter plot** draws one point per example: the *relation* of a feature with the target
+* It tells whether a **line is plausible**, how noisy the relation is, and where it breaks
+* Here (450 districts): the price rises with income ($r = 0.69$), the cloud **fans out**, and the cap shows as a flat row at 5.0
+
+## Which Features Repeat Each Other?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[x=0.6cm,y=0.33cm]
+\fill[cred!100!white] (0,0) rectangle (1,-1); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-0.5) {1.00};
+\fill[cblue!12!white] (1,0) rectangle (2,-1); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-0.5) {-0.12};
+\fill[cred!55!white] (2,0) rectangle (3,-1); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-0.5) {0.55};
+\fill[cblue!13!white] (3,0) rectangle (4,-1); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-0.5) {-0.13};
+\fill[cblue!0!white] (4,0) rectangle (5,-1); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-0.5) {-0.00};
+\fill[cblue!2!white] (5,0) rectangle (6,-1); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-0.5) {-0.02};
+\fill[cblue!8!white] (6,0) rectangle (7,-1); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-0.5) {-0.08};
+\fill[cblue!2!white] (7,0) rectangle (8,-1); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-0.5) {-0.02};
+\fill[cred!69!white] (8,0) rectangle (9,-1); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-0.5) {0.69};
+\fill[cblue!12!white] (0,-1) rectangle (1,-2); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-1.5) {-0.12};
+\fill[cred!100!white] (1,-1) rectangle (2,-2); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-1.5) {1.00};
+\fill[cblue!22!white] (2,-1) rectangle (3,-2); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-1.5) {-0.22};
+\fill[cblue!13!white] (3,-1) rectangle (4,-2); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-1.5) {-0.13};
+\fill[cblue!24!white] (4,-1) rectangle (5,-2); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-1.5) {-0.24};
+\fill[cblue!1!white] (5,-1) rectangle (6,-2); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-1.5) {-0.01};
+\fill[cred!1!white] (6,-1) rectangle (7,-2); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-1.5) {0.01};
+\fill[cblue!11!white] (7,-1) rectangle (8,-2); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-1.5) {-0.11};
+\fill[cred!11!white] (8,-1) rectangle (9,-2); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-1.5) {0.11};
+\fill[cred!55!white] (0,-2) rectangle (1,-3); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-2.5) {0.55};
+\fill[cblue!22!white] (1,-2) rectangle (2,-3); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-2.5) {-0.22};
+\fill[cred!100!white] (2,-2) rectangle (3,-3); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-2.5) {1.00};
+\fill[cred!47!white] (3,-2) rectangle (4,-3); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-2.5) {0.47};
+\fill[cblue!12!white] (4,-2) rectangle (5,-3); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-2.5) {-0.12};
+\fill[cblue!1!white] (5,-2) rectangle (6,-3); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-2.5) {-0.01};
+\fill[cred!15!white] (6,-2) rectangle (7,-3); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-2.5) {0.15};
+\fill[cblue!7!white] (7,-2) rectangle (8,-3); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-2.5) {-0.07};
+\fill[cred!24!white] (8,-2) rectangle (9,-3); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-2.5) {0.24};
+\fill[cblue!13!white] (0,-3) rectangle (1,-4); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-3.5) {-0.13};
+\fill[cblue!13!white] (1,-3) rectangle (2,-4); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-3.5) {-0.13};
+\fill[cred!47!white] (2,-3) rectangle (3,-4); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-3.5) {0.47};
+\fill[cred!100!white] (3,-3) rectangle (4,-4); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-3.5) {1.00};
+\fill[cblue!15!white] (4,-3) rectangle (5,-4); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-3.5) {-0.15};
+\fill[cblue!11!white] (5,-3) rectangle (6,-4); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-3.5) {-0.11};
+\fill[cred!9!white] (6,-3) rectangle (7,-4); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-3.5) {0.09};
+\fill[cred!2!white] (7,-3) rectangle (8,-4); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-3.5) {0.02};
+\fill[cblue!9!white] (8,-3) rectangle (9,-4); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-3.5) {-0.09};
+\fill[cblue!0!white] (0,-4) rectangle (1,-5); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-4.5) {-0.00};
+\fill[cblue!24!white] (1,-4) rectangle (2,-5); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-4.5) {-0.24};
+\fill[cblue!12!white] (2,-4) rectangle (3,-5); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-4.5) {-0.12};
+\fill[cblue!15!white] (3,-4) rectangle (4,-5); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-4.5) {-0.15};
+\fill[cred!100!white] (4,-4) rectangle (5,-5); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-4.5) {1.00};
+\fill[cred!20!white] (5,-4) rectangle (6,-5); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-4.5) {0.20};
+\fill[cblue!14!white] (6,-4) rectangle (7,-5); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-4.5) {-0.14};
+\fill[cred!11!white] (7,-4) rectangle (8,-5); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-4.5) {0.11};
+\fill[cblue!2!white] (8,-4) rectangle (9,-5); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-4.5) {-0.02};
+\fill[cblue!2!white] (0,-5) rectangle (1,-6); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-5.5) {-0.02};
+\fill[cblue!1!white] (1,-5) rectangle (2,-6); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-5.5) {-0.01};
+\fill[cblue!1!white] (2,-5) rectangle (3,-6); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-5.5) {-0.01};
+\fill[cblue!11!white] (3,-5) rectangle (4,-6); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-5.5) {-0.11};
+\fill[cred!20!white] (4,-5) rectangle (5,-6); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-5.5) {0.20};
+\fill[cred!100!white] (5,-5) rectangle (6,-6); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-5.5) {1.00};
+\fill[cblue!13!white] (6,-5) rectangle (7,-6); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-5.5) {-0.13};
+\fill[cred!15!white] (7,-5) rectangle (8,-6); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-5.5) {0.15};
+\fill[cblue!26!white] (8,-5) rectangle (9,-6); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-5.5) {-0.26};
+\fill[cblue!8!white] (0,-6) rectangle (1,-7); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-6.5) {-0.08};
+\fill[cred!1!white] (1,-6) rectangle (2,-7); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-6.5) {0.01};
+\fill[cred!15!white] (2,-6) rectangle (3,-7); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-6.5) {0.15};
+\fill[cred!9!white] (3,-6) rectangle (4,-7); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-6.5) {0.09};
+\fill[cblue!14!white] (4,-6) rectangle (5,-7); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-6.5) {-0.14};
+\fill[cblue!13!white] (5,-6) rectangle (6,-7); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-6.5) {-0.13};
+\fill[cred!100!white] (6,-6) rectangle (7,-7); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-6.5) {1.00};
+\fill[cblue!92!white] (7,-6) rectangle (8,-7); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-6.5) {-0.92};
+\fill[cblue!14!white] (8,-6) rectangle (9,-7); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-6.5) {-0.14};
+\fill[cblue!2!white] (0,-7) rectangle (1,-8); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-7.5) {-0.02};
+\fill[cblue!11!white] (1,-7) rectangle (2,-8); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-7.5) {-0.11};
+\fill[cblue!7!white] (2,-7) rectangle (3,-8); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-7.5) {-0.07};
+\fill[cred!2!white] (3,-7) rectangle (4,-8); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-7.5) {0.02};
+\fill[cred!11!white] (4,-7) rectangle (5,-8); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-7.5) {0.11};
+\fill[cred!15!white] (5,-7) rectangle (6,-8); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-7.5) {0.15};
+\fill[cblue!92!white] (6,-7) rectangle (7,-8); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-7.5) {-0.92};
+\fill[cred!100!white] (7,-7) rectangle (8,-8); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-7.5) {1.00};
+\fill[cblue!5!white] (8,-7) rectangle (9,-8); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-7.5) {-0.05};
+\fill[cred!69!white] (0,-8) rectangle (1,-9); \node[font=\fontsize{5}{5}\selectfont] at (0.5,-8.5) {0.69};
+\fill[cred!11!white] (1,-8) rectangle (2,-9); \node[font=\fontsize{5}{5}\selectfont] at (1.5,-8.5) {0.11};
+\fill[cred!24!white] (2,-8) rectangle (3,-9); \node[font=\fontsize{5}{5}\selectfont] at (2.5,-8.5) {0.24};
+\fill[cblue!9!white] (3,-8) rectangle (4,-9); \node[font=\fontsize{5}{5}\selectfont] at (3.5,-8.5) {-0.09};
+\fill[cblue!2!white] (4,-8) rectangle (5,-9); \node[font=\fontsize{5}{5}\selectfont] at (4.5,-8.5) {-0.02};
+\fill[cblue!26!white] (5,-8) rectangle (6,-9); \node[font=\fontsize{5}{5}\selectfont] at (5.5,-8.5) {-0.26};
+\fill[cblue!14!white] (6,-8) rectangle (7,-9); \node[font=\fontsize{5}{5}\selectfont] at (6.5,-8.5) {-0.14};
+\fill[cblue!5!white] (7,-8) rectangle (8,-9); \node[font=\fontsize{5}{5}\selectfont] at (7.5,-8.5) {-0.05};
+\fill[cred!100!white] (8,-8) rectangle (9,-9); \node[font=\fontsize{5}{5}\selectfont] at (8.5,-8.5) {1.00};
+\node[font=\tiny, anchor=east] at (-0.1,-0.5) {MedInc}; \node[font=\tiny, rotate=90, anchor=east] at (0.5,-9.1) {MedInc};
+\node[font=\tiny, anchor=east] at (-0.1,-1.5) {Age}; \node[font=\tiny, rotate=90, anchor=east] at (1.5,-9.1) {Age};
+\node[font=\tiny, anchor=east] at (-0.1,-2.5) {Rooms}; \node[font=\tiny, rotate=90, anchor=east] at (2.5,-9.1) {Rooms};
+\node[font=\tiny, anchor=east] at (-0.1,-3.5) {Bedrms}; \node[font=\tiny, rotate=90, anchor=east] at (3.5,-9.1) {Bedrms};
+\node[font=\tiny, anchor=east] at (-0.1,-4.5) {Pop}; \node[font=\tiny, rotate=90, anchor=east] at (4.5,-9.1) {Pop};
+\node[font=\tiny, anchor=east] at (-0.1,-5.5) {Occup}; \node[font=\tiny, rotate=90, anchor=east] at (5.5,-9.1) {Occup};
+\node[font=\tiny, anchor=east] at (-0.1,-6.5) {Lat}; \node[font=\tiny, rotate=90, anchor=east] at (6.5,-9.1) {Lat};
+\node[font=\tiny, anchor=east] at (-0.1,-7.5) {Lon}; \node[font=\tiny, rotate=90, anchor=east] at (7.5,-9.1) {Lon};
+\node[font=\tiny, anchor=east] at (-0.1,-8.5) {price}; \node[font=\tiny, rotate=90, anchor=east] at (8.5,-9.1) {price};
+\end{tikzpicture}
+\end{center}
+```
+
+* **Pearson's $r$** for every pair: $+1$ together, $-1$ opposite, $0$ no *linear* relation
+* High $r$ with the target: **signal**; high $r$ between inputs: **collinearity**, unstable weights (regularization)
+* Here: income and price $0.69$; latitude and longitude $-0.92$; rooms and bedrooms $0.47$
+
+## Does Location Matter?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, width=4.4cm, height=3.6cm, xmin=-124.6, xmax=-114, ymin=32.4, ymax=42.1, xlabel={longitude}, ylabel={latitude}, scatter, only marks, scatter src=explicit, mark=square*, mark size=1.5pt, colormap/viridis, point meta min=0.5, point meta max=4, colorbar, colorbar style={width=0.2cm, ytick={1,2,3,4}, yticklabel style={font=\tiny}}, xtick={-122,-118}, ytick={34,38,42}]
+  \addplot[scatter, scatter src=explicit] coordinates {(-124.25,40.75) [0.90] (-124.25,41.75) [0.87] (-123.75,39.25) [1.47] (-123.75,40.25) [0.80] (-123.25,38.75) [1.54] (-123.25,39.25) [1.18] (-123.25,40.75) [0.66] (-122.75,37.75) [3.70] (-122.75,38.25) [2.20] (-122.75,38.75) [1.47] (-122.75,39.25) [1.02] (-122.75,40.75) [0.95] (-122.75,41.75) [0.69] (-122.25,36.75) [2.55] (-122.25,37.25) [3.75] (-122.25,37.75) [2.64] (-122.25,38.25) [1.76] (-122.25,38.75) [1.81] (-122.25,39.25) [0.78] (-122.25,39.75) [0.72] (-122.25,40.25) [0.76] (-122.25,40.75) [0.96] (-122.25,41.25) [0.75] (-121.75,36.25) [3.33] (-121.75,36.75) [2.41] (-121.75,37.25) [2.68] (-121.75,37.75) [2.63] (-121.75,38.25) [1.38] (-121.75,38.75) [1.51] (-121.75,39.25) [0.78] (-121.75,39.75) [0.95] (-121.75,40.75) [0.74] (-121.25,36.25) [1.30] (-121.25,36.75) [2.00] (-121.25,37.25) [1.23] (-121.25,37.75) [1.16] (-121.25,38.25) [1.34] (-121.25,38.75) [1.36] (-121.25,39.25) [1.41] (-121.25,39.75) [0.92] (-121.25,40.25) [1.10] (-120.75,35.25) [2.27] (-120.75,35.75) [1.80] (-120.75,36.75) [0.70] (-120.75,37.25) [0.99] (-120.75,37.75) [1.33] (-120.75,38.25) [1.14] (-120.75,38.75) [1.47] (-120.75,39.25) [1.50] (-120.75,39.75) [0.93] (-120.75,40.25) [0.75] (-120.25,34.75) [1.81] (-120.25,36.25) [0.70] (-120.25,36.75) [0.70] (-120.25,37.25) [0.86] (-120.25,37.75) [1.16] (-120.25,38.25) [1.22] (-120.25,38.75) [1.29] (-120.25,39.25) [1.64] (-120.25,39.75) [0.76] (-119.75,34.25) [3.29] (-119.75,36.25) [0.77] (-119.75,36.75) [0.86] (-119.75,37.25) [1.16] (-119.75,37.75) [1.13] (-119.75,38.75) [1.25] (-119.25,34.25) [2.40] (-119.25,35.25) [0.85] (-119.25,35.75) [0.64] (-119.25,36.25) [0.79] (-119.25,36.75) [0.80] (-119.25,37.25) [1.17] (-118.75,34.25) [3.03] (-118.75,34.75) [1.45] (-118.75,35.25) [0.74] (-118.75,36.25) [0.91] (-118.75,37.75) [1.75] (-118.25,33.75) [2.19] (-118.25,34.25) [2.60] (-118.25,34.75) [1.48] (-118.25,35.25) [0.79] (-118.25,35.75) [0.81] (-118.25,37.25) [1.16] (-117.75,33.25) [3.25] (-117.75,33.75) [2.50] (-117.75,34.25) [1.79] (-117.75,34.75) [1.18] (-117.75,35.25) [1.01] (-117.75,35.75) [0.86] (-117.25,32.75) [1.93] (-117.25,33.25) [2.18] (-117.25,33.75) [1.48] (-117.25,34.25) [1.13] (-117.25,34.75) [0.97] (-116.75,32.75) [1.78] (-116.75,33.25) [2.03] (-116.75,33.75) [1.23] (-116.75,34.25) [1.33] (-116.75,34.75) [0.70] (-116.25,33.75) [1.34] (-116.25,34.25) [0.74] (-115.75,32.75) [0.78] (-115.75,33.25) [0.59] (-115.25,32.75) [0.89] (-114.75,33.75) [0.83]};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* A **map**: position on the axes, the target as colour; it exposes structure no single feature shows
+* Neighbours with similar values mean a **non-linear, joint** effect: a plane cannot follow a coastline
+* Here: the Bay Area and Los Angeles stand out (polynomial features, later; trees, Class 06)
+
+## How Balanced Are the Classes?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, xbar, width=0.6\textwidth, height=2.6cm, bar width=12pt, symbolic y coords={spam, ham}, ytick=data, xmin=0, xmax=0.8, xlabel={fraction of e-mails}, nodes near coords, nodes near coords style={font=\scriptsize, /pgf/number format/fixed, /pgf/number format/precision=3}, enlarge y limits=0.5]
+  \addplot[fill=cblue!55, draw=cblue] coordinates {(0.606,ham) (0.394,spam)};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* A **bar chart of the class counts** is the first plot of any classification problem
+* It sets the **baseline** (always answer the majority class), decides the use of **stratified** splits, and warns when accuracy may mislead
+* Here: 39.4% spam, so "everything is ham" is already 60.6% accurate: imbalanced, but not rare
+
+## How Sparse Are the Features?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, ybar, width=0.62\textwidth, height=3.1cm, bar width=14pt, xmin=0, xmax=1, ymin=0, xtick={0,0.2,0.4,0.6,0.8,1}, xlabel={fraction of e-mails where the feature is 0}, ylabel={features}]
+  \addplot[fill=cblue!55, draw=cblue] coordinates {(0.05,3) (0.15,0) (0.25,1) (0.35,0) (0.45,3) (0.55,2) (0.65,2) (0.75,8) (0.85,19) (0.95,19)};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* For every feature we plot the **fraction of zeros**: how dense the data are
+* Mostly-zero features mean "word absent": the mean says little, the standard deviation is set by a few rare values, and some models (Naive Bayes, Class 04) use *presence* itself
+* Here: **77.4%** of the entries are 0, and 19 of the 57 features are 0 in more than 90% of the e-mails
+
+## Which Features Separate the Classes?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, xbar, width=0.6\textwidth, height=3.4cm, bar width=5pt, symbolic y coords={!,\$,free,remove,george,hp}, ytick=data, y dir=reverse, xmin=0, xmax=1.5, xlabel={mean frequency (\%)}, legend pos=north east, enlarge y limits=0.12]
+  \addplot[fill=cred!70, draw=cred] coordinates {(0.514,!) (0.174,\$) (0.518,free) (0.275,remove) (0.002,george) (0.017,hp)}; \addlegendentry{spam}
+  \addplot[fill=cblue!55, draw=cblue] coordinates {(0.110,!) (0.012,\$) (0.074,free) (0.009,remove) (1.265,george) (0.895,hp)}; \addlegendentry{ham}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* Compare a feature's **mean in each class**: a large gap means the feature carries signal
+* It tells us which inputs matter, and which are **artefacts** a model should not lean on
+* Here: spam says `!`, `$`, `free`, `remove`; `george` and `hp` appear only in ham: one HP Labs mailbox, a pattern that will not transfer to other mailboxes
+
+## Do the Classes Differ in Scale?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, ybar, width=0.62\textwidth, height=3.1cm, bar width=5pt, xmin=0, xmax=4.5, ymin=0, xtick={0,1,2,3,4}, xlabel={capital letters in runs, total ($\log_{10}$ axis)}, ylabel={e-mails (\%)}, legend pos=north east]
+  \addplot[fill=cblue!55, draw=cblue] coordinates {(0.25,1.7) (0.75,13.1) (1.25,20.8) (1.75,31.2) (2.25,20.5) (2.75,9.9) (3.25,2.5) (3.75,0.3) (4.25,0.0)}; \addlegendentry{ham}
+  \addplot[fill=cred!70, draw=cred] coordinates {(0.25,0.3) (0.75,0.4) (1.25,4.2) (1.75,22.4) (2.25,36.1) (2.75,23.6) (3.25,11.4) (3.75,1.5) (4.25,0.1)}; \addlegendentry{spam}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* **Overlaid histograms**, one per class, show how well a feature separates them and which scale it lives on
+* A feature that spans orders of magnitude cannot be drawn, or fitted, on a linear scale: the tail hides everything else
+* Here: the total of capital letters needs a $\log_{10}$ axis; spam sits about one order of magnitude to the right
+
+## From Plots to Decisions
+
+| Plot | It measures | Decision |
+|:------------------|:-------------------------|:-----------------------------|
+| target histogram | shape of the target, censoring | loss and metric; a floor for the error |
+| feature histogram | scale, outliers | logarithm, scaling |
+| scatter | form of one relation | linear or not, features to add |
+| correlation matrix | linear association, collinearity | regularization, drop duplicates |
+| map | joint structure | polynomial features, other models |
+| class bars | class proportions | stratified split, MCC, baseline |
+| zero fractions | sparsity | $\log(1+x)$, which model |
+| class means | signal and artefacts | features to trust |
+
+* A plot that changes no decision was not worth drawing
+
+## Methodology: Why Hold Out Data?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, height=4cm, width=0.7\textwidth, xmin=1, xmax=4, ymin=1e-4, ymax=1e5, ymode=log, xtick={1,2,3,4}, xlabel={polynomial degree}, ylabel={MSE (log)}, legend pos=north west]
   \addplot[cblue, mark=*, mark size=1.5pt] coordinates {(1,0.478) (2,0.310) (3,0.135) (4,0.0003)}; \addlegendentry{training set}
   \addplot[cred, mark=*, mark size=1.5pt] coordinates {(1,0.4665) (2,0.460) (3,159.8) (4,20289)}; \addlegendentry{held-out test set}
 \end{axis}
@@ -110,7 +360,7 @@ subtitle: "Class 03 — Linear Models"
 * The **training** error says "perfect"; only **unseen** data shows the truth
 * Every number we report must come from data the model did not train on
 
-## Hold-Out: One Split
+## Methodology: One Hold-Out Split
 
 ```{=latex}
 \begin{center}
@@ -136,13 +386,13 @@ subtitle: "Class 03 — Linear Models"
 \end{center}
 ```
 
-## One Split Is Not Enough
+## Methodology: One Split Is Not Enough
 
 * The same linear model on **200 random splits**: test MSE from **0.415** to **0.486** (mean 0.449, std 0.015)
 * With 4128 test rows the spread is small; with a few hundred rows it would be large
 * **Repeated hold-out** and **cross-validation** turn one number into a mean *and* a spread
 
-| Protocol | Mean test MSE | Spread |
+| Method | Mean test MSE | Spread |
 |:--------------------|:-------:|:-----------------------|
 | one 80/20 split | 0.449 | $\pm 0.015$ over 200 splits |
 | 5-fold CV | 0.449 | std of folds 0.019, 95% CI $\pm 0.024$ |
@@ -150,7 +400,7 @@ subtitle: "Class 03 — Linear Models"
 
 * Class 01: confidence intervals, corrected resampled $t$-test, McNemar
 
-## k-Fold Cross-Validation
+## Methodology: $k$-Fold Cross-Validation
 
 ```{=latex}
 \begin{center}
@@ -171,29 +421,43 @@ subtitle: "Class 03 — Linear Models"
 * Every example is used for validation **exactly once**; report the mean and the spread of the $k$ scores
 * Use it to **choose** hyper-parameters (degree, $\lambda$, threshold): a separate **test** set is touched once, at the end
 
-## Stratified, Grouped and Temporal Splits
+## Methodology: Stratified, Grouped, Temporal
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}[x=0.5cm, y=0.5cm]
   \node[font=\scriptsize, anchor=east] at (-0.2,2) {\textbf{stratified}};
   \foreach \i in {0,...,19} { \pgfmathparse{mod(\i,5)<2 ? 1 : 0}\ifnum\pgfmathresult=1 \fill[cred!70] (\i,1.6) rectangle ++(0.8,0.7); \else \fill[cblue!50] (\i,1.6) rectangle ++(0.8,0.7); \fi }
-  \node[font=\scriptsize, anchor=west] at (20.5,2) {same class ratio in each part};
   \node[font=\scriptsize, anchor=east] at (-0.2,0) {\textbf{grouped}};
   \foreach \i/\g in {0/1,1/1,2/1,3/2,4/2,5/3,6/3,7/3,8/3,9/4,10/4,11/5,12/5,13/5,14/6,15/6,16/7,17/7,18/7,19/7} { \pgfmathtruncatemacro{\sh}{\g*12+10} \fill[cgreen!\sh] (\i,-0.4) rectangle ++(0.8,0.7); }
-  \node[font=\scriptsize, anchor=west] at (20.5,0) {a patient/user is never split};
   \node[font=\scriptsize, anchor=east] at (-0.2,-2) {\textbf{temporal}};
   \fill[cblue!50] (0,-2.4) rectangle (14.8,-1.7); \fill[corange!75] (15,-2.4) rectangle (19.8,-1.7);
-  \node[font=\scriptsize, anchor=west] at (20.5,-2) {train on the past, test on the future};
 \end{tikzpicture}
 \end{center}
 ```
 
-* **Stratified:** keeps the class proportions; on 100 e-mails the spam fraction of train and test differs by **0.092** on average with a random split, **0.015** stratified (lab A1)
+* **Stratified:** keeps the class proportions; on 100 e-mails the spam fraction of train and test differs by **0.092** on average with a random split, **0.015** stratified (lab B1)
 * **Grouped:** correlated rows must stay together, or the test set leaks
 * **Temporal:** never test on data older than the training data
 
-## Scale With the Training Set Only
+## Preprocessing: Why Scaling Matters
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, ymode=log, width=0.62\textwidth, height=3.8cm, xmin=0, xmax=100, ymin=1e-6, ymax=10, xlabel={gradient descent step}, ylabel={loss $-$ optimum (log)}, legend pos=north east]
+  \addplot[cblue, mark=*, mark size=1pt] coordinates {(0,5.16e+00) (2,1.32e-01) (5,5.35e-02) (10,2.22e-02) (20,7.30e-03) (30,2.76e-03) (50,4.07e-04) (75,3.74e-05) (100,3.43e-06)}; \addlegendentry{standardized}
+  \addplot[cred, mark=*, mark size=1pt] coordinates {(0,5.16e+00) (2,3.68e+00) (5,2.36e+00) (10,1.38e+00) (20,9.20e-01) (30,8.58e-01) (50,8.38e-01) (75,8.23e-01) (100,8.10e-01)}; \addlegendentry{raw units}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* Inputs in different units (latitude near 35, income near 4) make the loss a **long thin valley**: condition number **41** standardized, $\mathbf{3\cdot10^{8}}$ raw (Class 02)
+* Gradient descent takes a tiny step to survive the steep direction and crawls along the flat one: after 100 steps the raw fit is still **0.81** above the optimum
+* Penalties ($\lambda\lVert w\rVert^2$), distances ($k$-NN) and kernels treat all inputs alike: they need **comparable scales**
+
+## Preprocessing: Scale on Training Only
 
 ```{=latex}
 \begin{center}
@@ -209,52 +473,74 @@ subtitle: "Class 03 — Linear Models"
 
 $$z_j = \frac{x_j - \mu_j}{\sigma_j}, \qquad \mu_j, \sigma_j \text{ estimated on the training rows only}$$
 
-* Same 1000 steps: standardized housing loss **0.455**, raw features **0.532** (conditioning, Class 02)
 * Any statistic learned from data (mean, vocabulary, bins, threshold) stays **inside** the training part (data leakage, Class 01)
 
-## Skewed Features: Take a Logarithm
+## Preprocessing: Why a Logarithm Matters
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, xbar, height=3.4cm, width=0.7\textwidth, symbolic y coords={Population, AveOccup, AveRooms, MedInc}, ytick=data, xmin=0, xmax=520, xlabel={maximum divided by the median}, nodes near coords, nodes near coords style={font=\tiny, /pgf/number format/fixed, /pgf/number format/precision=0}, bar width=8pt, enlarge y limits=0.2]
-  \addplot[fill=cred!55, draw=cred] coordinates {(30.6,Population) (441,AveOccup) (27.1,AveRooms) (4.2,MedInc)};
+\begin{axis}[faa, ybar, width=5.2cm, height=3.4cm, bar width=7pt, xmin=0, xmax=6.6, ymin=0, xtick={0,2,4,6}, ytick=\empty, xlabel={\texttt{AveOccup} (raw)}]
+  \addplot[fill=cblue!55, draw=cblue] coordinates {(0.25,0) (0.75,3) (1.25,149) (1.75,1481) (2.25,4403) (2.75,6581) (3.25,4319) (3.75,1954) (4.25,978) (4.75,426) (5.25,161) (5.75,70) (6.25,115)};
+\end{axis}
+\begin{axis}[faa, ybar, at={(6.2cm,0)}, width=5.2cm, height=3.4cm, bar width=7pt, xmin=-1, xmax=7, ymin=0, ytick=\empty, xlabel={$\ln$ \texttt{AveOccup}}]
+  \addplot[fill=cgreen!55, draw=cgreen] coordinates {(-0.75,0) (-0.25,3) (0.25,394) (0.75,8554) (1.25,10897) (1.75,725) (2.25,37) (2.75,20) (3.25,1) (3.75,3) (4.25,2) (4.75,0) (5.25,1) (5.75,0) (6.25,2) (6.75,0)};
 \end{axis}
 \end{tikzpicture}
 \end{center}
 ```
 
-* A few districts with 1200+ people per house would dominate a linear fit and, after polynomial expansion, explode
-* Housing: $\log$ of `AveRooms`, `AveBedrms`, `Population`, `AveOccup`
-* Spam: $\log(1 + x)$ of all 57 frequencies (most are exactly 0), then standardize
-* Transformations are **choices made by us** and chosen without looking at the test set
+* Squared error is dominated by the **largest values**: one district with 1243 people per house outweighs thousands of ordinary ones
+* A logarithm turns *ratios* into *differences* and pulls the tail in ($\log(1+x)$ keeps 0 at 0)
+* Housing, least squares, test MSE: **0.497** raw, **0.421** with the log ($R^2$ 0.623 to 0.681)
+* Spam, logistic regression, 5-fold MCC: **0.831** raw, **0.877** with $\log(1+x)$
 
-## The Protocol Used All Class
+## Preprocessing: Missing Values, Categories
+
+| Problem | What to do | Learned from |
+|:-------------------|:--------------------------------------|:------------------|
+| Missing number | impute the **median** (+ a 0/1 "was missing" column if absence means something) | training rows |
+| Category | **one-hot**: a 0/1 column per level; an unseen level gives zeros | training levels |
+| Many levels | group the rare ones; target encoding needs nested folds | training folds |
+
+* **Standard steps of the preprocessing toolset**, like scaling: `SimpleImputer`, `OneHotEncoder`, `ColumnTransformer` (scikit-learn); `fill_null`, `to_dummies` (polars)
+* Dropping incomplete rows changes the **population** you evaluate on: say so, or impute
+* The median of **all** rows is the same leak as scaling with all rows
+
+## The Pipeline, End to End
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}[node distance=5mm]
-  \node[fillbox=cgray, text width=1.2cm] (all) {all data};
-  \node[fillbox=cblue, text width=1.9cm, right=8mm of all] (tr) {training part};
-  \node[fillbox=cgreen, text width=2.6cm, right=8mm of tr] (cv) {$k$-fold: choose degree, $\lambda$, threshold};
-  \node[fillbox=cred, text width=1.8cm, right=8mm of cv] (fin) {refit, report once};
-  \node[fillbox=corange, text width=1.9cm, below=9mm of tr] (te) {test set (locked)};
-  \draw[flow] (all) -- (tr); \draw[flow] (tr) -- (cv); \draw[flow] (cv) -- (fin); \draw[flow] (all.south) |- (te.west); \draw[flow] (te.east) -| (fin.south);
+  \node[fillbox=cgray, text width=0.9cm] (all) {all data};
+  \node[fillbox=cblue, text width=1.2cm, right=6mm of all] (tr) {training part};
+  \node[fillbox=cgreen, text width=2.0cm, right=6mm of tr] (pp) {\textbf{3.}\\ preprocess\\ (per fold)};
+  \node[fillbox=cpurple, text width=1.2cm, right=4mm of pp] (md) {\textbf{4.} fit, tune};
+  \node[fillbox=cred, text width=1.3cm, right=6mm of md] (fin) {\textbf{5.} refit, test once};
+  \node[fillbox=corange, text width=1.7cm, below=9mm of tr] (te) {\textbf{2.} test set (locked)};
+  \begin{scope}[on background layer]
+    \node[draw, dashed, rounded corners, fit=(pp)(md), inner sep=4pt, label={[note]above:inside every $k$-fold round}] {};
+  \end{scope}
+  \draw[flow] (all) -- (tr); \draw[flow] (tr) -- (pp); \draw[flow] (pp) -- (md); \draw[flow] (md) -- (fin); \draw[flow] (all.south) |- (te.west); \draw[flow] (te.east) -| (fin.south);
 \end{tikzpicture}
 \end{center}
 ```
 
-* Split once (stratified for classes), keep the test set **locked**
-* Fit scalers and models on training folds only; choose hyper-parameters on validation folds
-* Refit on the whole training part with the chosen values; evaluate on the test set **once**
-* Report the number **with** its baseline and its spread
+1. **Data visualization:** decides the transformations and the metric
+2. **Evaluation methodology:** split once, keep the test set **locked**, choose folds and metric
+3. **Preprocessing:** fitted on the training folds only (scale, log, impute, encode)
+4. **Model:** fit and tune on validation folds
+5. **Report:** refit, test **once**, with baseline and spread
 
-## Live Demo R1: Splitting the Data
+## Live Demo: Data, Preprocessing, Splitting
 
-* Notebook `01_linear_regression.ipynb`, section **R1**
-* 200 random hold-out splits, 5-fold and 10-fold cross-validation, and their spreads
-* Standardization computed on the training part only
-* Question: what would change if the file were sorted by latitude?
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO R1:}\\[5mm]
+{\LARGE\ttfamily 01\_linear\_regression.ipynb}
+\end{center}
+```
 
 # Linear Regression
 
@@ -269,7 +555,7 @@ $$z_j = \frac{x_j - \mu_j}{\sigma_j}, \qquad \mu_j, \sigma_j \text{ estimated on
     \edef\tmp{\noexpand\draw[cred, very thick] (axis cs:\px,\py) -- (axis cs:\px,{1.1*\px});}\tmp
     \edef\tmp{\noexpand\fill (axis cs:\px,\py) circle (2.2pt);}\tmp
   }
-  \node[font=\scriptsize, cred, anchor=west] at (axis cs:0.15,5.4) {red: residuals $e_i = y_i - \hat y_i$};
+  \node[font=\scriptsize, cred, anchor=south east, align=right] at (axis cs:4.95,0) {red: residuals\\ $e_i = y_i - \hat y_i$};
 \end{axis}
 \end{tikzpicture}
 \end{center}
@@ -365,7 +651,7 @@ Same four points, start $w = b = 0$, $\eta = 0.05$
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4.1cm, width=0.7\textwidth, ymode=log, xmin=0, xmax=100, ymin=1e-5, ymax=100, xlabel={step}, ylabel={loss $-$ optimum}, legend pos=outer north east]
+\begin{axis}[faa, height=4.1cm, width=0.7\textwidth, ymode=log, xmin=0, xmax=100, ymin=1e-5, ymax=100, xlabel={step}, ylabel={loss $-$ optimum (log)}, legend pos=outer north east]
   \addplot[cblue, mark=*, mark size=1pt] coordinates {(0,5.16) (10,2.33) (20,1.1) (30,0.555) (40,0.306) (50,0.19) (60,0.133) (70,0.102) (80,0.0843) (90,0.0726) (100,0.0641)}; \addlegendentry{$\eta = 0.02$}
   \addplot[corange, mark=*, mark size=1pt] coordinates {(0,5.16) (10,0.164) (20,0.0625) (30,0.0392) (40,0.0271) (50,0.0199) (60,0.0152) (70,0.012) (80,0.00955) (90,0.00769) (100,0.00622)}; \addlegendentry{$\eta = 0.1$}
   \addplot[cgreen, mark=*, mark size=1pt] coordinates {(0,5.16) (10,0.0257) (20,0.00923) (30,0.00394) (40,0.00171) (50,0.000741) (60,0.000322) (70,0.00014) (80,6.05e-05) (90,2.63e-05) (100,1.14e-05)}; \addlegendentry{$\eta = 0.4$}
@@ -438,12 +724,15 @@ RMSE 0.649 = **64 900 USD** typical error
 * Income raises the price; latitude and longitude (the coast) dominate the rest
 * About 32% of the variance is unexplained: what a hyperplane cannot see (and the cap at 5.0)
 
-## Live Demo R2: Linear Regression
+## Live Demo: Linear Regression Pipeline
 
-* Notebook `01_linear_regression.ipynb`, section **R2**
-* The normal equation, gradient descent with `jax.grad`, and scikit-learn: three routes to the same weights
-* The Hessian of the loss, its eigenvalues, and four learning rates
-* Predicted versus actual: the **cap at 5.0** is visible as a horizontal wall
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO R2:}\\[5mm]
+{\LARGE\ttfamily 01\_linear\_regression.ipynb}
+\end{center}
+```
 
 # Regression Metrics
 
@@ -522,6 +811,19 @@ Residuals of the least-squares line: $e = (-0.1,\ 0.8,\ -1.3,\ 0.6)$, $\ y = (1,
 * Choose by the **cost of a mistake**: quadratic cost (safety margins) $\Rightarrow$ MSE/RMSE; linear cost, dirty data $\Rightarrow$ MAE
 * Report at least one absolute and one relative measure, plus the baseline
 
+## Baselines: Mean, Median, Mode
+
+| Constant answer | Value | MSE | MAE | sMAPE | $R^2$ |
+|:------------------|------:|------:|------:|-------:|-------:|
+| mean | 2.069 | **1.319** | 0.904 | 44.6% | 0.000 |
+| median | 1.797 | 1.392 | **0.875** | **43.4%** | $-0.056$ |
+| mode | 5.000 | 9.915 | 2.932 | 89.8% | $-6.520$ |
+| *linear regression* | | *0.421* | *0.472* | *25.6%* | *0.681* |
+
+* The **mean** minimizes the squared error, the **median** the absolute error: each wins *its own* metric, so the baseline must be chosen with the metric
+* The **mode** is the most frequent value: here the cap at 5.0, a terrible constant for a continuous target
+* A model is only worth reporting if it beats the best baseline **for the metric you report**
+
 ## Result: House Prices
 
 | Model | MSE | RMSE | MAE | sMAPE | $R^2$ |
@@ -533,13 +835,15 @@ Residuals of the least-squares line: $e = (-0.1,\ 0.8,\ -1.3,\ 0.6)$, $\ y = (1,
 * RMSE (0.649) above MAE (0.472): a few districts are badly wrong (the capped ones, the very expensive)
 * sMAPE 25.6%: a quarter of the price, on average. Useful, not precise: the next slides try to do better
 
-## Live Demo R3: Regression Metrics
+## Live Demo: Metrics and Baselines
 
-* Notebook `01_linear_regression.ipynb`, section **R3**
-* The five metrics on the test set, checked against `sklearn.metrics`
-* One outlier: MSE explodes, MAE barely moves
-* sMAPE asymmetry (50 versus 150) and a negative $R^2$
-* Question: which metric would you show a house buyer? A bank?
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO R3:}\\[5mm]
+{\LARGE\ttfamily 01\_linear\_regression.ipynb}
+\end{center}
+```
 
 # Polynomial Feature Expansion
 
@@ -565,7 +869,7 @@ $$\#\text{features} = \binom{n + d}{d} - 1 \qquad (n \text{ inputs, degree } d)$
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=3.8cm, width=0.6\textwidth, ymode=log, xmin=1, xmax=4, ymin=5, ymax=1000, xtick={1,2,3,4}, xlabel={degree $d$}, ylabel={features}, height=3.2cm, nodes near coords, nodes near coords style={font=\tiny, /pgf/number format/fixed, /pgf/number format/precision=0, anchor=south}]
+\begin{axis}[faa, height=3.8cm, width=0.6\textwidth, ymode=log, xmin=1, xmax=4, ymin=5, ymax=1000, xtick={1,2,3,4}, xlabel={degree $d$}, ylabel={features (log)}, height=3.2cm, nodes near coords, nodes near coords style={font=\tiny, /pgf/number format/fixed, /pgf/number format/precision=0, anchor=south}]
   \addplot[cblue, mark=*, mark size=1.8pt] coordinates {(1,8) (2,44) (3,164) (4,494)};
   \addplot[cred, dashed, no marks] coordinates {(1,300) (4,300)};
   \node[font=\tiny, cred, anchor=north west] at (axis cs:1.6,280) {300 training examples};
@@ -623,7 +927,7 @@ $$\#\text{features} = \binom{n + d}{d} - 1 \qquad (n \text{ inputs, degree } d)$
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, ybar, height=3.9cm, width=0.75\textwidth, ymode=log, log origin=infty, ymin=0.2, ymax=50000, symbolic x coords={degree 1, degree 2, degree 3, degree 4}, xtick=data, ylabel={test MSE}, bar width=10pt, legend style={at={(0.5,1.02)}, anchor=south, legend columns=2}, enlarge x limits=0.15]
+\begin{axis}[faa, ybar, height=3.9cm, width=0.75\textwidth, ymode=log, log origin=infty, ymin=0.2, ymax=50000, symbolic x coords={degree 1, degree 2, degree 3, degree 4}, xtick=data, ylabel={test MSE (log)}, bar width=10pt, legend style={at={(0.5,1.02)}, anchor=south, legend columns=2}, enlarge x limits=0.15]
   \addplot[fill=cred!55, draw=cred] coordinates {(degree 1,0.4665) (degree 2,0.460) (degree 3,159.8) (degree 4,20289)}; \addlegendentry{300 examples}
   \addplot[fill=cblue!55, draw=cblue] coordinates {(degree 1,0.4213) (degree 2,0.3901) (degree 3,1.0043) (degree 4,9.6725)}; \addlegendentry{3000 examples}
 \end{axis}
@@ -635,11 +939,15 @@ $$\#\text{features} = \binom{n + d}{d} - 1 \qquad (n \text{ inputs, degree } d)$
 * Flexibility only pays when the data can *support* it: at 3000 examples degree 2 (**0.390**) finally beats the line (**0.421**)
 * The other cure keeps the data and **constrains the model**: regularization
 
-## Live Demo R4: Polynomial Features
+## Live Demo: Polynomial Features
 
-* Notebook `01_linear_regression.ipynb`, section **R4**
-* Degrees 1, 3, 9, 15 on 25 points; the feature counts; train and test error for 300 and 3000 examples
-* Question: why does the test error of degree 3 explode although the training error is small?
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO R4:}\\[5mm]
+{\LARGE\ttfamily 01\_linear\_regression.ipynb}
+\end{center}
+```
 
 # Regularization
 
@@ -649,16 +957,16 @@ $$\min_{w,\,b}\;\; \underbrace{\frac{1}{N}\sum_i (\hat y_i - y_i)^2}_{\text{fit 
 
 | | $\Omega(w)$ | Name | Effect |
 |:----------|:------------------------|:--------------|:------------------------|
-| $L_2$ | $\lVert w\rVert_2^2 = \sum_j w_j^2$ | **ridge** | shrinks all weights smoothly |
-| $L_1$ | $\lVert w\rVert_1 = \sum_j \lvert w_j\rvert$ | **lasso** | shrinks and sets many to **exactly 0** |
+| $L_2$ | $\lVert w\rVert_2^2 = \sum_j w_j^2$ | **ridge** ($L_2$ regularization, weight decay) | shrinks all weights smoothly |
+| $L_1$ | $\lVert w\rVert_1 = \sum_j \lvert w_j\rvert$ | **lasso** ($L_1$ regularization) | shrinks and sets many to **exactly 0** |
 | both | $\rho\lVert w\rVert_1 + \frac{1-\rho}{2}\lVert w\rVert_2^2$ | **elastic net** | sparse and stable |
 
 * $\lambda \ge 0$ is a **hyper-parameter**: $0$ is least squares, $\infty$ predicts the mean
 * The bias $b$ is **not** penalized; **standardize first**, the penalty treats all weights alike
 
-## Ridge Regression
+## Ridge ($L_2$) Regression
 
-$$\mathcal{L}_{ridge} = \frac{1}{N}\lVert y - Xw - b\rVert^2 + \lambda\lVert w\rVert_2^2$$
+$$\mathcal{L}_{ridge} = \mathcal{L}_{L_2} = \frac{1}{N}\lVert y - Xw - b\rVert^2 + \lambda\lVert w\rVert_2^2$$
 
 $$w^\star = (X^\top X + \lambda N I)^{-1} X^\top y \qquad (\text{centred data})$$
 
@@ -667,23 +975,23 @@ $$w^\star = (X^\top X + \lambda N I)^{-1} X^\top y \qquad (\text{centred data})$
 * One feature, centred: $w_{ridge} = \dfrac{w_{ols}}{1 + \lambda N / \sum x_i^2}$, a **shrinkage factor** below 1
 * $\lambda = 0$: least squares; moderate $\lambda$: smooth and stable; $\lambda \to \infty$: $w \to 0$, the mean (more bias, less variance)
 
-## Lasso and Elastic Net
+## Lasso ($L_1$) and Elastic Net
 
-$$\mathcal{L}_{lasso} = \frac{1}{N}\lVert y - Xw - b\rVert^2 + \lambda\lVert w\rVert_1$$
+$$\mathcal{L}_{lasso} = \mathcal{L}_{L_1} = \frac{1}{N}\lVert y - Xw - b\rVert^2 + \lambda\lVert w\rVert_1$$
 
 * No closed form ($\lvert w\rvert$ has a kink at 0), but still **convex**: coordinate descent (scikit-learn) or a **proximal** step, descend on the MSE, then **soft-threshold**
 
 $$\text{soft}(w, t) = \text{sign}(w)\,\max(\lvert w\rvert - t,\, 0)$$
 
 * A weight pulled less by the data than by the penalty **stays at 0**: **feature selection**
-* `jax.grad` of $\lvert w\rvert$ is a *subgradient*: weights hover near 0, never exactly; the proximal step gives exact zeros (lab C3)
+* `jax.grad` of $\lvert w\rvert$ is a *subgradient*: weights hover near 0, never exactly; the proximal step gives exact zeros (lab E3)
 * **Elastic net** keeps correlated features together; lasso picks one
 
 ## The Geometry: Why $L_1$ Gives Zeros
 
 ```{=latex}
 \begin{center}
-\begin{tikzpicture}[scale=1.05]
+\begin{tikzpicture}[scale=0.8]
 \def\cx{1.6}\def\cy{0.8}
 \begin{scope}
   \draw[->, cgray] (-0.6,0) -- (3.6,0) node[right, font=\scriptsize] {$w_1$}; \draw[->, cgray] (0,-0.6) -- (0,2.4) node[above, font=\scriptsize] {$w_2$};
@@ -691,23 +999,22 @@ $$\text{soft}(w, t) = \text{sign}(w)\,\max(\lvert w\rvert - t,\, 0)$$
   \fill[cblue] (\cx,\cy) circle (1.6pt);
   \draw[very thick] (0,0) circle (1.5);
   \fill[cred] (1.07,1.05) circle (2.4pt);
-  \node[note, below] at (1.5,-0.7) {ridge: contact off the axes\\ (both weights non-zero)};
+  \node[note, below] at (1.5,-1.5) {ridge ($L_2$): contact off the axes\\ (both weights non-zero)};
 \end{scope}
-\begin{scope}[xshift=6.6cm]
+\begin{scope}[xshift=5.6cm]
   \draw[->, cgray] (-0.6,0) -- (3.6,0) node[right, font=\scriptsize] {$w_1$}; \draw[->, cgray] (0,-0.6) -- (0,2.4) node[above, font=\scriptsize] {$w_2$};
   \foreach \r in {0.7,1.0818,1.5} { \draw[cblue, rotate around={150:(\cx,\cy)}] (\cx,\cy) ellipse ({2*\r} and {0.3*\r}); }
   \fill[cblue] (\cx,\cy) circle (1.6pt);
   \draw[very thick] (1.5,0) -- (0,1.5) -- (-1.5,0) -- (0,-1.5) -- cycle;
   \fill[cred] (0,1.5) circle (2.4pt);
-  \node[note, below] at (1.5,-0.7) {lasso: contact at a corner\\ ($w_1 = 0$ exactly)};
+  \node[note, below] at (1.5,-1.5) {lasso ($L_1$): contact at a corner\\ ($w_1 = 0$ exactly)};
 \end{scope}
 \end{tikzpicture}
 \end{center}
 ```
 
-* Blue: contours of the squared error (centre = least squares). Black: the region $\lVert w\rVert_p \le t$
-* The solution is where the smallest contour touches the region
-* The $L_1$ region has **corners on the axes**; contours tend to meet it there
+* Blue: contours of the squared error (centre = least squares). Black: the region $\lVert w\rVert_p \le t$; the solution is where they touch
+* The $L_1$ region has **corners on the axes**: contours tend to meet it there
 
 ## The Prior View: MAP
 
@@ -733,7 +1040,7 @@ $$\hat w_{MAP} = \arg\min_w\; \underbrace{-\log p(y \mid X, w)}_{\text{data: MSE
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=3.8cm, width=0.44\textwidth, xmode=log, xmin=0.01, xmax=10000, ymin=-3, ymax=3, xlabel={ridge $\alpha$}, ylabel={coefficient}, title={\scriptsize ridge: smooth shrinkage}, title style={yshift=-1mm}]
+\begin{axis}[faa, height=3.8cm, width=0.44\textwidth, xmode=log, xmin=0.01, xmax=10000, ymin=-3, ymax=3, xlabel={ridge ($L_2$) $\alpha$ (log)}, ylabel={coefficient}, title={\scriptsize ridge: smooth shrinkage}, title style={yshift=-1mm}]
   \addplot[cblue, no marks] coordinates {(0.01,-1.8) (0.0316,-1.82) (0.1,-1.63) (0.316,-1.24) (1,-0.761) (3.16,-0.399) (10,-0.2) (31.6,-0.104) (100,-0.0501) (316,-0.0115) (1e3,0.0101) (3.16e3,0.0144) (1e4,0.0102)};
   \addplot[corange, no marks] coordinates {(0.01,1.6) (0.0316,1.97) (0.1,1.72) (0.316,1.14) (1,0.544) (3.16,0.163) (10,0.00537) (31.6,-0.0314) (100,-0.0194) (316,0.00204) (1e3,0.0143) (3.16e3,0.0153) (1e4,0.0104)};
   \addplot[cgreen, no marks] coordinates {(0.01,2.66) (0.0316,2.05) (0.1,1.52) (0.316,0.964) (1,0.522) (3.16,0.279) (10,0.151) (31.6,0.0818) (100,0.0487) (316,0.0282) (1e3,0.0125) (3.16e3,0.00351) (1e4,0.000393)};
@@ -742,7 +1049,7 @@ $$\hat w_{MAP} = \arg\min_w\; \underbrace{-\log p(y \mid X, w)}_{\text{data: MSE
 \end{axis}
 \end{tikzpicture}
 \begin{tikzpicture}
-\begin{axis}[faa, height=3.8cm, width=0.44\textwidth, xmode=log, xmin=0.001, xmax=1, ymin=-1.3, ymax=1.5, xlabel={lasso $\alpha$}, title={\scriptsize lasso: weights reach exactly 0}, title style={yshift=-1mm}]
+\begin{axis}[faa, height=3.8cm, width=0.44\textwidth, xmode=log, xmin=0.001, xmax=1, ymin=-1.3, ymax=1.5, xlabel={lasso ($L_1$) $\alpha$ (log)}, title={\scriptsize lasso: weights reach exactly 0}, title style={yshift=-1mm}]
   \addplot[cblue, no marks] coordinates {(1,0) (0.0412,0) (0.0242,0) (0.0143,0) (0.00838,-0.0782) (0.00492,-0.173) (0.00289,-0.587) (0.0017,-0.883) (0.001,-1.16)};
   \addplot[corange, no marks] coordinates {(1,0) (0.00492,0) (0.00289,0) (0.0017,0.548) (0.001,1.31)};
   \addplot[cgreen, no marks] coordinates {(1,0) (0.0242,0) (0.0143,0.0773) (0.00838,0.168) (0.00492,0.201) (0.00289,0.174) (0.0017,0.389) (0.001,0.724)};
@@ -761,7 +1068,7 @@ $$\hat w_{MAP} = \arg\min_w\; \underbrace{-\log p(y \mid X, w)}_{\text{data: MSE
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4cm, width=0.7\textwidth, xmode=log, ymode=log, xmin=0.01, xmax=10000, ymin=0.15, ymax=40, xlabel={ridge $\alpha$ (stronger $\rightarrow$)}, ylabel={MSE}, legend pos=north east]
+\begin{axis}[faa, height=4cm, width=0.7\textwidth, xmode=log, ymode=log, xmin=0.01, xmax=10000, ymin=0.15, ymax=40, xlabel={ridge ($L_2$) $\alpha$ (log, stronger $\rightarrow$)}, ylabel={MSE (log)}, legend pos=north east]
   \addplot[cblue, mark=*, mark size=1pt] coordinates {(0.01,0.21) (0.0316,0.234) (0.1,0.262) (0.316,0.288) (1,0.312) (3.16,0.333) (10,0.356) (31.6,0.387) (100,0.43) (316,0.48) (1e3,0.541) (3.16e3,0.647) (1e4,0.878)}; \addlegendentry{train}
   \addplot[cred, mark=*, mark size=1pt] coordinates {(0.01,21.8) (0.0316,15.3) (0.1,5.21) (0.316,1.06) (1,0.454) (3.16,0.476) (10,0.469) (31.6,0.461) (100,0.495) (316,0.551) (1e3,0.59) (3.16e3,0.615) (1e4,0.751)}; \addlegendentry{test}
   \draw[cgray, dashed] (axis cs:1,0.15) -- (axis cs:1,40);
@@ -801,11 +1108,15 @@ $$\hat w_{MAP} = \arg\min_w\; \underbrace{-\log p(y \mid X, w)}_{\text{data: MSE
 * Regularization turns a disastrous model into a good one; the lasso does it with **15** of 164 features
 * Choosing $\alpha$ on the test set (the "best" rows) is optimistic: the CV rows are the honest numbers
 
-## Live Demo R5: Ridge, Lasso, Elastic Net
+## Live Demo: Ridge, Lasso, Elastic Net
 
-* Notebook `01_linear_regression.ipynb`, section **R5**
-* Constraint geometry; ridge and lasso paths; the validation curve; `RidgeCV` and `LassoCV`
-* Question: the plain line (0.467) still beats the ridge at 300 examples: when would the degree-3 model win?
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO R5:}\\[5mm]
+{\LARGE\ttfamily 01\_linear\_regression.ipynb}
+\end{center}
+```
 
 # The Perceptron
 
@@ -837,9 +1148,11 @@ $$\hat y = \text{sign}(w^\top x + b) \qquad y \in \{-1, +1\}$$
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=3.4cm, width=0.55\textwidth, xmin=-3, xmax=3, ymin=-0.3, ymax=3.3, xlabel={margin $m = y\,(w^\top x + b)$}, ylabel={loss}, legend pos=north east]
-  \addplot[cred, domain=-3:0] {-x}; \addplot[cred, domain=0:3] {0}; \addlegendentry{perceptron $\max(0, -m)$}
-  \addplot[cgray, dashed] coordinates {(-3,1) (0,1) (0.001,0) (3,0)}; \addlegendentry{0/1 loss (flat)}
+\begin{axis}[faa, height=3.4cm, width=0.7\textwidth, xmin=-3, xmax=3, ymin=-0.3, ymax=3.3, xlabel={margin $m = y\,(w^\top x + b)$}, ylabel={loss}]
+  \addplot[cred, domain=-3:0] {-x}; \addplot[cred, domain=0:3] {0};
+  \addplot[cgray, dashed] coordinates {(-3,1) (0,1) (0.001,0) (3,0)};
+  \node[cred, font=\scriptsize, anchor=south west] at (axis cs:0.25,0.1) {perceptron loss};
+  \node[cgray, font=\scriptsize, anchor=south west] at (axis cs:0.25,1.15) {0/1 loss (dashed)};
 \end{axis}
 \end{tikzpicture}
 \end{center}
@@ -928,12 +1241,66 @@ Points $(2,1)^+,\ (1,2)^+,\ (0,-2)^-,\ (0,1)^-$; $\ w = (0,0),\ b = 0$
 * No notion of *how confident* a prediction is: a point just inside the boundary looks the same as one far away
 * Its smoother cousin, next: **logistic regression**, which turns the same score $w^\top x + b$ into a probability
 
-## Live Demo C1: The Perceptron
+## Live Demo: The Perceptron
 
-* Notebook `02_perceptron_logistic.ipynb`, section **C1**
-* The update as `jax.grad` of one example; boundary snapshots after each epoch
-* Separable, overlapping and XOR data; polynomial features fix XOR
-* Same weights as scikit-learn's `Perceptron`
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO P1:}\\[5mm]
+{\LARGE\ttfamily 02\_perceptron.ipynb}
+\end{center}
+```
+
+# Generalized Linear Models
+
+## Generalized Linear Models: Three Parts
+
+$$g\big(\mathbb{E}[y \mid x]\big) = w^\top x + b$$
+
+| Part | Role | Linear regression |
+|:--------------------|:------------------------------------|:-----------------|
+| linear predictor | $\eta = w^\top x + b$: what we learn | the same |
+| **link** $g$ | connects the mean of $y$ to $\eta$ | identity |
+| **distribution** of $y$ | how $y$ varies around its mean (exponential family) | Gaussian |
+
+* We already know one member: linear regression is a Gaussian $y$ with the identity link
+* A **GLM** keeps the linear predictor and changes the other two parts to fit the *type* of $y$: a probability, a count, a class
+* The loss is always the **negative log-likelihood** of the chosen distribution (Class 04 derives it)
+
+## Why a Link? The Mean Must Stay in Its Range
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, width=3.6cm, height=2.8cm, xmin=-4, xmax=4, ymin=-4, ymax=4, xlabel={$\eta$}, title={\scriptsize identity: $\mu = \eta$}, xtick={-4,0,4}, ytick={-4,0,4}]
+  \addplot[cblue, domain=-4:4] {x};
+\end{axis}
+\begin{axis}[faa, at={(4.1cm,0)}, width=3.6cm, height=2.8cm, xmin=-4, xmax=4, ymin=0, ymax=1, xlabel={$\eta$}, title={\scriptsize logit link: $\mu = \sigma(\eta)$}, xtick={-4,0,4}, ytick={0,0.5,1}]
+  \addplot[cred, domain=-4:4, samples=80] {1/(1+exp(-x))};
+\end{axis}
+\begin{axis}[faa, at={(8.2cm,0)}, width=3.6cm, height=2.8cm, xmin=-4, xmax=4, ymin=0, ymax=8, xlabel={$\eta$}, title={\scriptsize log link: $\mu = e^{\eta}$}, xtick={-4,0,4}, ytick={0,4,8}]
+  \addplot[cgreen, domain=-4:4, samples=80] {exp(x)};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+| Model | $y \mid x$ | Link $g$ | Mean $\mu$ lives in |
+|:--------------------|:-----------|:---------|:----------------|
+| Linear regression | Gaussian | identity | $\mathbb{R}$ |
+| Logistic regression | Bernoulli | logit | $(0, 1)$ |
+| Poisson regression | Poisson | $\log$ | $(0, \infty)$ |
+
+* The score $\eta$ is any real number; the **inverse link** maps it to a valid mean (a probability, a rate)
+
+## The Canonical Link: One Gradient for the Family
+
+$$\mathcal{L} = -\tfrac{1}{N}\sum_i \log p(y_i \mid x_i) \quad\Rightarrow\quad \nabla_w\,\mathcal{L} = \tfrac{1}{N}\, X^\top(\hat\mu - y)$$
+
+* With the **canonical link** (identity, logit, log) the gradient is always *features $\times$ residual*: the same JAX code serves the whole family
+* Linear regression: $\hat\mu = \hat y$, residual $\hat y - y$ (the gradient seen before); convex in $w$ for every canonical-link GLM
+* scikit-learn: `PoissonRegressor`, `GammaRegressor`, `TweedieRegressor` (and the two we know)
+* The **perceptron** has no probability model: it is *not* a GLM
 
 # Logistic Regression
 
@@ -954,6 +1321,7 @@ Points $(2,1)^+,\ (1,2)^+,\ (0,-2)^-,\ (0,1)^-$; $\ w = (0,0),\ b = 0$
 $$p(y = 1 \mid x) = \sigma(w^\top x + b), \qquad \sigma(z) = \frac{1}{1 + e^{-z}}$$
 
 * A line fitted to 0/1 labels leaves $[0, 1]$: not a probability (schematic data)
+* The GLM for a yes/no $y$: **Bernoulli** distribution with the **logit link**
 * The sigmoid maps any score into $(0, 1)$; the boundary $p = 0.5$ is still $w^\top x + b = 0$; the **threshold** is a choice
 
 ## Odds and Log-Odds
@@ -1021,7 +1389,7 @@ Worked example: one e-mail, feature $x = 1.5$, weights $w = 1.2$, $b = -0.5$
 | $\partial \ell / \partial w = (p - y)\,x$ | $-0.321$ | $+1.179$ |
 | $\partial \ell / \partial b = p - y$ | $-0.214$ | $+0.786$ |
 
-* Like linear regression: (prediction $-$ target) $\times$ feature. Not typed in the lab: `jax.grad` produces it
+* The canonical-link result of the GLM section, for the Bernoulli: (prediction $-$ target) $\times$ feature. Not typed in the lab: `jax.grad` produces it
 
 ## Training It: Convex but No Closed Form
 
@@ -1074,21 +1442,22 @@ $$\mathcal{L}_\lambda = \frac{1}{N}\sum_i \ell_i + \frac{\lambda}{2}\lVert w\rVe
 * Unregularized degree 15: an intricate boundary that fits the noise (train 0.955, test 0.859); with $C = 0.1$ it stays smooth and **generalizes better** (test 0.876)
 * The best unregularized model here is degree 3 (test 0.887): flexibility and constraint both need tuning
 
-## More Than Two Classes: Softmax
+## More Than Two Classes: One Class Against the Rest
 
-$$p(y = k \mid x) = \frac{e^{z_k}}{\sum_{j=1}^{K} e^{z_j}}, \qquad z_k = w_k^\top x + b_k$$
+* A logistic regression is **binary**. For $K$ classes, train $K$ binary models: "class $k$ **against all the others**"
+* Predict $\hat k = \arg\max_k\, p_k(x)$ (separate models: the $p_k$ need not sum to 1)
+* scikit-learn: `OneVsRestClassifier(LogisticRegression())`; the same wrapper works for the perceptron
+* Alternative: the **multinomial** logit (softmax) is the GLM for a categorical $y$: one weight vector per class, fitted *together*, probabilities sum to 1 (neural-network outputs, Class 05)
 
-* One score per class; the **softmax** turns them into probabilities that sum to 1
-* The loss is the same cross-entropy: $-\log p(y_i \mid x_i)$; for $K = 2$ it reduces to the sigmoid
-* `LogisticRegression` uses it for multi-class problems; every neural-network classifier ends with it (Class 05)
-* The perceptron extends to $K$ classes by keeping one weight vector per class and updating the true and the predicted class
+## Live Demo: Logistic Regression
 
-## Live Demo C2: Logistic Regression
-
-* Notebook `02_perceptron_logistic.ipynb`, section **C2**
-* The sigmoid, and cross-entropy versus squared error (loss and gradient)
-* Training with `jax.value_and_grad`; weights and odds ratios read off as words (`hp`, `george` for ham; `!`, `remove` for spam)
-* Section **C4**: polynomial features and the regularization strength on "two moons"
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO L1:}\\[5mm]
+{\LARGE\ttfamily 03\_logistic\_regression.ipynb}
+\end{center}
+```
 
 # Classification Metrics
 
@@ -1220,13 +1589,16 @@ Ours: $\dfrac{337\cdot 526 - 32\cdot 26}{\sqrt{369 \cdot 363 \cdot 558 \cdot 552
 * Regression counterpart: MSE/RMSE for quadratic costs, MAE for robust, sMAPE for relative, $R^2$ against the mean
 * Whatever the metric: baseline, spread over folds, and a **test set used once**
 
-## Live Demo C3: Classification Metrics
+## Live Demo: Classification Metrics
 
-* Notebook `02_perceptron_logistic.ipynb`, section **C3**
-* The confusion matrix and all five metrics, checked against scikit-learn
-* The imbalanced test set (1.9% spam): the accuracy paradox live
-* The threshold sweep, the precision-recall curve, the ROC AUC
-* Question: which threshold would you ship for a personal mailbox? For a company?
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO C1:}\\[5mm]
+{\LARGE\ttfamily 04\_classification\_metrics.ipynb}
+\end{center}
+```
+
 # Summary
 
 ## The Models Side by Side
@@ -1254,7 +1626,7 @@ Ours: $\dfrac{337\cdot 526 - 32\cdot 26}{\sqrt{369 \cdot 363 \cdot 558 \cdot 552
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}[node distance=5mm]
-  \node[fillbox=cgray, text width=1.8cm] (a) {split\\ scale};
+  \node[fillbox=cgray, text width=1.8cm] (a) {visualize, split, preprocess};
   \node[fillbox=cblue, text width=1.8cm, right=of a] (b) {fit\\ (JAX)};
   \node[fillbox=cgreen, text width=2.2cm, right=of b] (c) {tune $\lambda$, degree, threshold};
   \node[fillbox=corange, text width=2.2cm, right=of c] (d) {test once, right metric};
@@ -1268,24 +1640,9 @@ Ours: $\dfrac{337\cdot 526 - 32\cdot 26}{\sqrt{369 \cdot 363 \cdot 558 \cdot 552
 * **A model is (hypothesis, loss, optimizer):** write the loss in `jax.numpy`, `jax.grad` does the rest
 * **Linear regression:** MSE, closed form or GD; **polynomial features** add flexibility (and overfitting)
 * **Regularization:** ridge shrinks, lasso selects; $\lambda$ is chosen on validation data
-* **Perceptron:** a subgradient step. **Logistic regression:** cross-entropy, probabilities
+* **GLM:** linear predictor + link + distribution; the canonical-link gradient is always *features $\times$ residual*. **Logistic regression** is the Bernoulli GLM (cross-entropy); the **perceptron** is a subgradient step, not a GLM
 * **Metrics:** MSE, MAE, sMAPE, $R^2$; confusion matrix, precision, recall, $F_1$, **MCC**; the threshold is a decision
-* **Protocol:** split, scale on training, tune by CV, test once, always a baseline
-
-## Lab 03: Build It in JAX
-
-| Part | Task | sklearn twin |
-|:-:|:--------------------------------------|:--------------------------|
-| A | splits, scaling, metrics from scratch | `metrics`, `model_selection` |
-| B | linear regression: MSE, `jax.grad`, normal equation | `LinearRegression` |
-| C | polynomial features, ridge, lasso, proximal step | `Ridge`, `Lasso` |
-| D | perceptron: its update is a `jax.grad` | `Perceptron` |
-| E | logistic regression, thresholds | `LogisticRegression` |
-| F | challenge: one protocol, three models | `cross_val_score` |
-
-* Guide `practice/03_linear_models.pdf`, notebook `lab03_linear_models.ipynb`, solution in `solutions/`
-* Every model is checked against its scikit-learn twin (a printed maximum difference)
-* **Project 1** is released today: start with this class's protocol
+* **Methodology:** visualize, split once, preprocess on training only, tune by CV, test once, always a baseline
 
 ## Next Class: Probabilistic Models
 
@@ -1298,6 +1655,7 @@ Ours: $\dfrac{337\cdot 526 - 32\cdot 26}{\sqrt{369 \cdot 363 \cdot 558 \cdot 552
 
 * G. James, D. Witten, T. Hastie, R. Tibshirani, J. Taylor, *An Introduction to Statistical Learning with Applications in Python*, 2023: chapters 3 (linear regression), 4 (classification), 6 (regularization)
 * C. Bishop, *Pattern Recognition and Machine Learning*, 2006: chapters 3 and 4 (linear models)
+* P. McCullagh, J. Nelder, *Generalized Linear Models*, 2nd ed., 1989
 
 ## References (2/2)
 
