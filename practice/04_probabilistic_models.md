@@ -159,12 +159,3 @@ Repair the probabilities of the Gaussian NB. **Platt scaling** learns a logistic
 Why must the calibration data differ from the training data? What did calibration repair, and what did it not?
 
 **Going further.** Replace Platt scaling by isotonic regression (`sklearn.isotonic.IsotonicRegression`), or use `CalibratedClassifierCV`, and compare. Or build a **multinomial** Naive Bayes for word *counts* (the natural model for text) and compare it with the Bernoulli one.
-
-# Checklist
-
-* [ ] Your Gaussian MLE, the Beta-prior MAP and the ridge MAP match the closed forms and scikit-learn.
-* [ ] Your Naive Bayes models (Bernoulli, Gaussian, categorical) match scikit-learn's joint log-probabilities, and you can explain Laplace smoothing as a prior.
-* [ ] You can turn a classifier into a regressor (binned target, expected value), and your linear-Gaussian posterior equals the maximum found by `jax.grad`.
-* [ ] You can explain why duplicating a feature makes Naive Bayes over-confident.
-* [ ] You can compute log-loss, Brier score and a reliability table, and you know why accuracy is not enough for probabilities.
-* [ ] You can derive the cost-based threshold and know that it needs calibrated probabilities.

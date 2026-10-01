@@ -194,12 +194,3 @@ The data: 300 training and 1000 test points, 6 features, 10% of the labels flipp
 5. Why does multiplying $\theta$ by a positive constant not change the error rate? What does that do to the landscape the blind optimizer sees?
 
 **Going further.** Replace the error rate with a metric that has no useful gradient either: the F1 score, or balanced accuracy on imbalanced classes. Or tune the learning rate and the number of steps of gradient descent with a blind optimizer (hyperparameter optimization).
-
-# Checklist
-
-* [ ] The A1 gradient matches `jax.grad`.
-* [ ] GD converges on P1 and P2, and you know the learning rate at which it diverges.
-* [ ] Your GA reaches the global minimum of P3 in most seeds.
-* [ ] You can justify $N$, $k$, $\alpha$, $\sigma$, the mutation rate and elitism.
-* [ ] You compared optimizers and initializations over many seeds, with the same budget.
-* [ ] You can explain when Newton needs one step, when it needs a few, and when it fails.

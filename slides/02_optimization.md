@@ -392,7 +392,7 @@ $$x_{k+1} - 2 = (1 - 2\eta)(x_k - 2) \;\Rightarrow\; \lvert x_k - x^\star \rvert
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=3.5cm, width=0.62\textwidth, ymode=log, xmin=0, xmax=20, ymin=1e-8, ymax=100, xlabel={iteration $k$}, ylabel={$|x_k - x^\star|$}, legend pos=outer north east, yticklabel style={/pgf/number format/sci}]
+\begin{axis}[faa, height=3.5cm, width=0.62\textwidth, ymode=log, xmin=0, xmax=20, ymin=1e-8, ymax=100, xlabel={iteration $k$}, ylabel={$|x_k - x^\star|$ (log)}, legend pos=outer north east, yticklabel style={/pgf/number format/sci}]
   \addplot[cblue, domain=0:20, samples=21, mark=*, mark size=1pt] {4*0.9^x}; \addlegendentry{$\eta=0.05$: slow}
   \addplot[cgreen, domain=0:20, samples=21, mark=*, mark size=1pt] {4*0.1^x}; \addlegendentry{$\eta=0.45$: fast}
   \addplot[corange, domain=0:20, samples=21, mark=*, mark size=1pt] {4*0.9^x}; \addlegendentry{$\eta=0.95$: oscillates}
@@ -510,7 +510,7 @@ $f(x) = e^x - 2x$, $\;x^\star = \ln 2$, $\;x_0 = 2$
 ::: {.column width="52%"}
 ```{=latex}
 \begin{tikzpicture}
-\begin{axis}[faa, height=5.2cm, width=\textwidth, ymode=log, xmin=0, xmax=6, ymin=1e-16, ymax=10, xlabel={iteration}, legend pos=south west]
+\begin{axis}[faa, height=5.2cm, width=\textwidth, ymode=log, xmin=0, xmax=6, ymin=1e-16, ymax=10, xlabel={iteration}, ylabel={error (log)}, legend pos=south west]
   \addplot[cblue, mark=*, mark size=1.5pt] coordinates {(0,1.31) (1,0.578) (2,0.139) (3,9.2e-3) (4,4.22e-5) (5,8.91e-10) (6,1e-16)}; \addlegendentry{Newton}
   \addplot[corange, mark=*, mark size=1.5pt] coordinates {(0,1.31) (1,0.768) (2,0.537) (3,0.395) (4,0.298) (5,0.229) (6,0.177)}; \addlegendentry{GD}
 \end{axis}
@@ -632,7 +632,7 @@ m_{k+1} &= \beta_1 m_k + (1-\beta_1)\, g_k, & s_{k+1} &= \beta_2 s_k + (1-\beta_
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, ybar, height=4.5cm, width=0.9\textwidth, ymode=log, log origin=infty, ymin=1e-20, ymax=10, bar width=16pt, x tick label style={font=\scriptsize}, symbolic x coords={GD, Momentum, Nesterov, RMSProp, Adam}, xtick=data, ylabel={loss after 3000 steps}, nodes near coords, nodes near coords style={font=\tiny, /pgf/number format/sci, /pgf/number format/precision=1}, point meta=rawy, enlarge x limits=0.15]
+\begin{axis}[faa, ybar, height=4.5cm, width=0.9\textwidth, ymode=log, log origin=infty, ymin=1e-20, ymax=10, bar width=16pt, x tick label style={font=\scriptsize}, symbolic x coords={GD, Momentum, Nesterov, RMSProp, Adam}, xtick=data, ylabel={loss after 3000 steps (log)}, nodes near coords, nodes near coords style={font=\tiny, /pgf/number format/sci, /pgf/number format/precision=1}, point meta=rawy, enlarge x limits=0.15]
   \addplot[fill=cblue!60, draw=cblue] coordinates {(GD,2.5e-2) (Momentum,1.5e-12) (Nesterov,2.2e-12) (RMSProp,2.3e-3) (Adam,5.1e-19)};
 \end{axis}
 \end{tikzpicture}
@@ -1211,7 +1211,7 @@ venv/bin/python -m optviewer    # http://127.0.0.1:8000
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, ybar, height=4.2cm, width=0.85\textwidth, ymode=log, log origin=infty, ymin=1e-5, ymax=100, bar width=7pt, symbolic x coords={Sphere, Rastrigin, Ackley, noisy Sphere}, xtick=data, ylabel={median true $f$}, legend style={at={(0.5,1.02)}, anchor=south, legend columns=4}, enlarge x limits=0.15]
+\begin{axis}[faa, ybar, height=4.2cm, width=0.85\textwidth, ymode=log, log origin=infty, ymin=1e-5, ymax=100, bar width=7pt, symbolic x coords={Sphere, Rastrigin, Ackley, noisy Sphere}, xtick=data, ylabel={median true $f$ (log)}, legend style={at={(0.5,1.02)}, anchor=south, legend columns=4}, enlarge x limits=0.15]
   \addplot[fill=cgray!50, draw=cgray] coordinates {(Sphere,10.01) (Rastrigin,51.56) (Ackley,6.56) (noisy Sphere,15.00)}; \addlegendentry{SA}
   \addplot[fill=cgreen!60, draw=cgreen] coordinates {(Sphere,0.001) (Rastrigin,9.37) (Ackley,0.037) (noisy Sphere,0.32)}; \addlegendentry{GA}
   \addplot[fill=cblue!60, draw=cblue] coordinates {(Sphere,3.3e-5) (Rastrigin,9.69) (Ackley,0.009) (noisy Sphere,0.36)}; \addlegendentry{SHADE}

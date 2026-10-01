@@ -458,7 +458,7 @@ $$\theta_{cjm} = P(x_j = m \mid c) = \frac{n_{cjm} + \alpha}{n_{cj} + \alpha M} 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4cm, width=0.72\textwidth, xmode=log, xmin=15, xmax=5000, ymin=0.78, ymax=0.96, xlabel={training examples}, ylabel={test accuracy}, legend pos=south east]
+\begin{axis}[faa, height=4cm, width=0.72\textwidth, xmode=log, xmin=15, xmax=5000, ymin=0.78, ymax=0.96, xlabel={training examples (log)}, ylabel={test accuracy}, legend pos=south east]
   \addplot[cblue, mark=*, mark size=1.4pt] coordinates {(20,0.835) (50,0.877) (100,0.898) (300,0.925) (1000,0.939) (3680,0.94)}; \addlegendentry{logistic}
   \addplot[corange, mark=*, mark size=1.4pt] coordinates {(20,0.83) (50,0.866) (100,0.882) (300,0.884) (1000,0.895) (3680,0.893)}; \addlegendentry{Bernoulli NB}
   \addplot[cred, mark=*, mark size=1.4pt] coordinates {(20,0.81) (50,0.802) (100,0.821) (300,0.819) (1000,0.842) (3680,0.851)}; \addlegendentry{Gaussian NB}
@@ -839,7 +839,7 @@ $$(1 - p)\,c_{FP} < p\,c_{FN} \quad\Longleftrightarrow\quad p > t^\star = \frac{
 | F | challenge: Platt scaling | `LogisticRegression` |
 
 * Guide `practice/04_probabilistic_models.pdf`, notebook `lab04_probabilistic_models.ipynb`, solution in `solutions/`
-* **Project 1** is due at Class 08: use the protocol of Classes 03 and 04
+* **Project 1** is due at Class 08: use the methodology of Classes 03 and 04: visualize, split, preprocess on training only
 
 ## References (1/2)
 

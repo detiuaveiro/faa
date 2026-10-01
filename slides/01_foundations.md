@@ -1921,7 +1921,7 @@ $$\underbrace{\mathbb{E}\big[(y - \hat{f}(x))^2\big]}_{\text{expected test error
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4.3cm, width=0.72\textwidth, xmin=1, xmax=100, ymin=0, ymax=1.05, xmode=log, xlabel={number of dimensions $d$}, ylabel={edge length needed}, log basis x=10]
+\begin{axis}[faa, height=4.3cm, width=0.72\textwidth, xmin=1, xmax=100, ymin=0, ymax=1.05, xmode=log, xlabel={number of dimensions $d$ (log)}, ylabel={edge length needed}, log basis x=10]
   \addplot[cblue, very thick, domain=1:100, samples=60] {0.1^(1/x)};
   \node[font=\scriptsize, anchor=west] at (axis cs:1.6,0.08) {$d=1$: 10\% of the range};
   \node[font=\scriptsize, anchor=east] at (axis cs:95,0.72) {$d=100$: 98\% of every axis};
@@ -1962,7 +1962,7 @@ $$\underbrace{\mathbb{E}\big[(y - \hat{f}(x))^2\big]}_{\text{expected test error
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4.4cm, width=0.75\textwidth, xmin=1, xmax=20, ymode=log, xlabel={number of features $d$}, ylabel={examples needed ($10^d$)}, ytick={10,1e5,1e10,1e15,1e20}]
+\begin{axis}[faa, height=4.4cm, width=0.75\textwidth, xmin=1, xmax=20, ymode=log, xlabel={number of features $d$}, ylabel={examples needed ($10^d$) (log)}, ytick={10,1e5,1e10,1e15,1e20}]
   \addplot[cred, very thick, mark=*, mark size=1.2pt, domain=1:20, samples=20] {10^x};
   \draw[cblue, dashed, thick] (axis cs:1,1e6) -- (axis cs:20,1e6) node[pos=0.02, above, anchor=south west, font=\scriptsize] {a large dataset: one million examples};
 \end{axis}
@@ -1979,7 +1979,7 @@ $$\underbrace{\mathbb{E}\big[(y - \hat{f}(x))^2\big]}_{\text{expected test error
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4.3cm, width=0.75\textwidth, xmode=log, ymode=log, xlabel={number of dimensions $d$}, ylabel={relative contrast}]
+\begin{axis}[faa, height=4.3cm, width=0.75\textwidth, xmode=log, ymode=log, xlabel={number of dimensions $d$ (log)}, ylabel={relative contrast (log)}]
   \addplot[cblue, very thick, mark=*, mark size=1.5pt] coordinates {(1,1609) (2,193) (5,6.26) (10,2.78) (20,1.12) (50,0.573) (100,0.395) (500,0.142) (1000,0.110)};
 \end{axis}
 \end{tikzpicture}
@@ -2002,7 +2002,7 @@ $$\text{relative contrast} = \frac{d_{\max} - d_{\min}}{d_{\min}}$$
 \end{tikzpicture}
 \hspace{4mm}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4cm, width=0.52\textwidth, xmode=log, xmin=1, xmax=1000, ymin=0, ymax=1.05, xlabel={dimension $d$}, ylabel={fraction near border}]
+\begin{axis}[faa, height=4cm, width=0.52\textwidth, xmode=log, xmin=1, xmax=1000, ymin=0, ymax=1.05, xlabel={dimension $d$ (log)}, ylabel={fraction near border}]
   \addplot[cred, very thick, domain=1:1000, samples=80] {1-0.9^x};
 \end{axis}
 \end{tikzpicture}
