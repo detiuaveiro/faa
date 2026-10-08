@@ -121,13 +121,13 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 
 | Block | Contents | Demo notebook |
 |:--|:--|:--|
-| Maximum likelihood | Likelihood and NLL, Bernoulli and Gaussian MLE, losses as negative log-likelihoods | [`01_mle_map.ipynb`](notebooks/04-probabilistic-models/01_mle_map.ipynb) — **M1–M3** |
+| Probability and maximum likelihood | Probability by counting, Bayes' rule, likelihood and NLL, Bernoulli and Gaussian MLE, losses as negative log-likelihoods | [`01_mle_map.ipynb`](notebooks/04-probabilistic-models/01_mle_map.ipynb) — **M0–M3** |
 | MAP | Beta prior and Laplace smoothing, Gaussian prior and ridge, the posterior of the weights | [`01_mle_map.ipynb`](notebooks/04-probabilistic-models/01_mle_map.ipynb) — **M4–M5** |
-| Naive Bayes, classification | Bayes' rule, independence, Bernoulli/categorical (discrete) and Gaussian (continuous) features, generative vs. discriminative | [`02_naive_bayes_classification.ipynb`](notebooks/04-probabilistic-models/02_naive_bayes_classification.ipynb) — **N1–N3** |
+| Naive Bayes, classification | Bayes' rule, independence, Bernoulli/categorical (discrete) and Gaussian or other (continuous) features, floats and log space, generative vs. discriminative | [`02_naive_bayes_classification.ipynb`](notebooks/04-probabilistic-models/02_naive_bayes_classification.ipynb) — **N1–N4** |
 | Naive Bayes, regression | Binned target with expected value; continuous target (linear-Gaussian, closed-form posterior); discrete features; correlated evidence | [`03_naive_bayes_regression.ipynb`](notebooks/04-probabilistic-models/03_naive_bayes_regression.ipynb) — **R1–R4** |
-| Probabilities and decisions | Log-loss, Brier score, reliability; Platt and isotonic calibration; cost-based thresholds | [`02_naive_bayes_classification.ipynb`](notebooks/04-probabilistic-models/02_naive_bayes_classification.ipynb) — **N4–N5** |
+| Probabilities and decisions | Log-loss, Brier score, reliability; Platt and isotonic calibration; cost-based thresholds | [`02_naive_bayes_classification.ipynb`](notebooks/04-probabilistic-models/02_naive_bayes_classification.ipynb) — **N5–N6** |
 
-**Lab:** [`lab04_probabilistic_models.ipynb`](notebooks/04-probabilistic-models/lab04_probabilistic_models.ipynb) (helpers in `lab04_utils.py`): MLE/MAP with `jax.grad`, Naive Bayes by counting, Naive Bayes regression, calibration and costs, each compared with its scikit-learn twin; solved and explained in [`solutions/lab04_probabilistic_models_solution.ipynb`](solutions/lab04_probabilistic_models_solution.ipynb).
+**Lab:** [`lab04_probabilistic_models.ipynb`](notebooks/04-probabilistic-models/lab04_probabilistic_models.ipynb) (helpers in `lab04_utils.py`): probability, MLE/MAP with `jax.grad`, Naive Bayes by counting, Naive Bayes regression, calibration and costs, each compared with its scikit-learn twin; solved and explained in [`solutions/lab04_probabilistic_models_solution.ipynb`](solutions/lab04_probabilistic_models_solution.ipynb).
 
 ---
 

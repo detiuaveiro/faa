@@ -14,16 +14,16 @@ title: "Lab 04 — Probabilistic Models, Built in JAX"
 
 By the end of the lab you should be able to:
 
-1. Derive a loss as a negative log-likelihood, add a prior, and recognize ridge and Laplace smoothing as MAP estimates.
-2. Build Naive Bayes for **discrete** (Bernoulli, categorical) and **continuous** (Gaussian) features by counting, with smoothing.
+1. Estimate probabilities by counting, apply Bayes' rule, derive a loss as a negative log-likelihood, add a prior, and recognize ridge and Laplace smoothing as MAP estimates.
+2. Build Naive Bayes for **discrete** (Bernoulli, categorical) and **continuous** (Gaussian, exponential) features by counting, with smoothing, in log space (floats are limited).
 3. Use Naive Bayes for **regression**, with a binned target and with a continuous target, and explain where the independence assumption hurts.
 4. Measure the quality of a probability (log-loss, Brier score, reliability), calibrate it, and make cost-based decisions.
 
 | Part | Task | twin | Time |
 |:--|:--|:--|:-:|
-| A | MLE and MAP with `jax.grad`: Gaussian, Beta prior, ridge as MAP | `Ridge`, `BernoulliNB` (`alpha`) | 20 min |
+| A | Probability by counting and Bayes' rule; MLE and MAP with `jax.grad`: Gaussian, Beta prior, ridge as MAP | `Ridge`, `BernoulliNB` (`alpha`) | 25 min |
 | B | Naive Bayes, **discrete** features: Bernoulli, Laplace smoothing | `BernoulliNB` | 15 min |
-| C | Naive Bayes, **continuous** features: Gaussian; categorical (binned) | `GaussianNB`, `CategoricalNB` | 20 min |
+| C | Naive Bayes, **continuous** features: Gaussian; exponential; categorical (binned) | `GaussianNB`, `CategoricalNB` | 25 min |
 | D | Naive Bayes for **regression**: binned target; continuous target | `GaussianNB`, `CategoricalNB`, `LinearRegression` | 35 min |
 | E | Probabilities: log-loss, Brier, reliability; decisions with costs | `log_loss`, `brier_score_loss`, `calibration_curve` | 20 min |
 | F | Challenge: Platt scaling with `jax.grad` | `LogisticRegression` | home |
@@ -38,7 +38,18 @@ jupyter lab notebooks/04-probabilistic-models/lab04_probabilistic_models.ipynb
 
 The data are those of Class 03: **spam** (Spambase, `load_spam()`) for classification and **house prices** (California housing, `load_housing()`) for regression. The notebook prepares four views of the spam features: `B_s` "the word appears" (binary), `L_s` $\log(1+x)$ (continuous), `Z_s` four quantile bins of `L_s` (categorical), and the raw `X_s`. Scaling statistics and bin edges come from the **training** part only. `stratified_split`, `fit_standardizer`, `standardize`, `classification_metrics` and `regression_metrics` are your Class 03 functions, given ready-made.
 
-# Part A — MLE and MAP with `jax.grad`
+# Part A — Probability, MLE and MAP with `jax.grad`
+
+## A0. Probability by counting and Bayes' rule
+
+A probability is a **frequency**: count and divide. Let $x$ = "the e-mail contains `free`" and $c$ the class. Bayes' rule turns the prior $P(c)$ and the likelihood $P(x\mid c)$ into the posterior:
+
+$$P(c\mid x) = \frac{P(c)\,P(x\mid c)}{\sum_{c'} P(c')\,P(x\mid c')}$$
+
+Implement `bayes_posterior(prior, likelihood)` for two arrays of shape `(K,)`. The driver estimates the prior and the likelihoods by counting on the training set, compares your posterior with the one obtained by counting *only the e-mails that contain "free"*, and then combines two words (`free` and `money`) with the **naive** assumption: the product of their likelihoods given the class.
+
+1. Does Bayes' rule give the same number as counting directly? What is the prior, and how far does "free" move it?
+2. For an e-mail with both words, compare the naive posterior with the direct count. What does the difference say about the independence assumption?
 
 ## A1. Gaussian maximum likelihood
 
@@ -76,6 +87,7 @@ The driver compares the joint log-probabilities and the posteriors with `Bernoul
 
 1. How close are you to scikit-learn, and how good is the classifier?
 2. What does $\alpha = 0$ do with 20 training e-mails, and with 100? Why does smoothing matter most for rare words?
+3. Floats are limited: the driver prints the probability of the least likely test e-mail as a product of 57 factors in `float32` and `float64`, and as a sum of logs. What fails, and why does the lab work in log space? What does smoothing add to that?
 
 # Part C — Naive Bayes with Continuous Features
 
@@ -91,6 +103,13 @@ Implement `fit_categorical_nb(Z, y, alpha, n_categories, n_classes=2)` returning
 
 1. Which Naive Bayes model is best on spam? Why is the categorical one not clearly better than the Bernoulli one?
 2. Which model wins with 20 examples, and which with 3680? Why do the NB curves plateau?
+
+## C3. Another distribution: the exponential
+
+The Gaussian is not the only choice for a continuous feature. A word frequency is non-negative with a long right tail, and the **exponential** density $P(x_j\mid c) = \lambda_{cj}\,e^{-\lambda_{cj}x_j}$ has that shape; its maximum-likelihood rate is one over the class mean. Implement `fit_exponential_nb(X, y, n_classes=2)` returning the log-prior and the rates $\lambda_{cj} = 1/(\bar x_{cj} + 10^{-3})$, and `joint_log_exponential(model, X)` $= \log P(c) + \sum_j(\log\lambda_{cj} - \lambda_{cj}x_j)$. Use the **raw** frequencies. The driver checks your joint against `scipy.stats.expon`, compares four Naive Bayes models, and plots the fitted densities of one feature on its histogram.
+
+1. Which of the four models is best on spam? How well does each distribution match the histogram?
+2. The exponential's most likely value is always 0. Why can that be wrong for a word frequency, and what would match it better (look at the Bernoulli model)?
 
 # Part D — Naive Bayes for Regression
 

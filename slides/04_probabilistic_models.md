@@ -14,15 +14,15 @@ subtitle: "Class 04 — Probabilistic Models"
   \node[fillbox=cred, text width=2.3cm, right=12mm of m] (l) {\textbf{loss}\\ MSE, cross-entropy};
   \node[fillbox=corange, text width=2.3cm, right=12mm of l] (o) {\textbf{optimizer}\\ GD, Adam, \texttt{jax.grad}};
   \draw[flow] (m) -- (l); \draw[flow] (o) -- (l);
-  \node[fillbox=cgreen, text width=8cm, below=7mm of l] (q) {\textbf{Class 04:} where do these losses come from? What if the model outputs a \emph{distribution}?};
+  \node[fillbox=cgreen, text width=8cm, below=7mm of l] (q) {\textbf{Class 04:} where do these losses come from?};
 \end{tikzpicture}
 \end{center}
 ```
 
-* Class 03: three models, each a **choice of loss**; ridge and lasso added a *penalty*
-* Class 04: the losses are **negative log-likelihoods**, the penalties are **priors**
-* A new family, **Naive Bayes**, is trained by *counting*, no optimizer: for classes **and** for numbers
-* And a question that accuracy hides: are the **probabilities** right, and what should we *do* with them?
+* Class 03: every model is a **model + a loss + an optimizer**; ridge and lasso add a **penalty** to the loss
+* We *chose* each loss, but we never explained **why that one**
+* Today's answer comes from **probability**: a loss is the *cost of a probabilistic assumption*
+* On the way: a new classifier, **Naive Bayes**, that is trained by *counting*, with no optimizer
 
 ## Why These Losses?
 
@@ -30,54 +30,252 @@ subtitle: "Class 04 — Probabilistic Models"
 \renewcommand{\arraystretch}{1.4}
 ```
 
-| Class 03 | Loss | Class 04 answer |
+| Class 03 | Loss | The question |
 |:-----------------------|:-------------------------|:-------------------------------------|
-| linear regression | squared error | Gaussian noise (MLE) |
-| robust regression | absolute error | Laplace noise (MLE) |
-| logistic regression | cross-entropy | Bernoulli labels (MLE) |
-| ridge | MSE + $\lVert w\rVert^2$ | Gaussian **prior** on $w$ (MAP) |
-| lasso | MSE + $\lVert w\rVert_1$ | Laplace **prior** on $w$ (MAP) |
-| Laplace smoothing | add-one counts | Beta **prior** on a probability (MAP) |
+| linear regression | squared error (MSE) | why *squares*, and not $\lvert e\rvert$ or $e^4$? |
+| logistic regression | cross-entropy | why a *logarithm* of the probability? |
+| ridge | MSE $+\ \lambda\lVert w\rVert^2$ | why penalize the *squared* weights? |
+| lasso | MSE $+\ \lambda\lVert w\rVert_1$ | why $\lvert w\rvert$, and why does it give zeros? |
 
-* One idea: choose the parameters that make the data **most probable** (MLE), possibly **weighted by a prior** (MAP)
+* Class 03 gave the recipes and hinted at the answer (slides "Why Squared Error?", "Cross-Entropy", "The Prior View")
+* Today we build the answer from the start, assuming **no probability background**
 
-## Probability in One Slide
+## Roadmap of the Class
 
-$$P(x, y) = P(x \mid y)\,P(y), \qquad P(x) = \sum_y P(x, y)$$
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+  \node[fillbox=cgray, text width=2.0cm] (a) {\textbf{1. Probability}\\ events, Bayes' rule};
+  \node[fillbox=cblue, text width=2.0cm, right=6mm of a] (b) {\textbf{2. Likelihood}\\ MLE: the data speak};
+  \node[fillbox=corange, text width=2.0cm, right=6mm of b] (c) {\textbf{3. Prior}\\ MAP: data + belief};
+  \node[fillbox=cgreen, text width=2.0cm, right=6mm of c] (d) {\textbf{4. Naive Bayes}\\ classify by counting};
+  \draw[flow] (a) -- (b); \draw[flow] (b) -- (c); \draw[flow] (c) -- (d);
+  \node[fillbox=cred, text width=5.5cm, below=7mm of b, xshift=1.6cm] (e) {\textbf{5. Probabilities you can trust}\\ calibration and decisions};
+  \draw[flow] (d) |- (e);
+\end{tikzpicture}
+\end{center}
+```
 
-$$P(y \mid x) = \frac{P(x \mid y)\,P(y)}{P(x)}$$
+* **1 to 3** answer "where do the losses come from?": a loss is a *negative log-likelihood*, a penalty is a *prior*
+* **4** uses the same two ideas to build a classifier that needs no optimizer, for classes **and** for numbers
+* **5** asks what accuracy hides: is "90% spam" really right 90% of the time, and what should we *do* with it?
 
-| Spam data (4601 e-mails) | Value |
-|:------------------------------------------|--------:|
-| $P(\text{spam})$ (prior) | 0.394 |
-| $P(\text{"free" present})$ | 0.270 |
-| $P(\text{"free"} \mid \text{spam})$, $\ P(\text{"free"} \mid \text{ham})$ | 0.546, $\ $ 0.090 |
-| $P(\text{spam} \mid \text{"free"}) = \dfrac{0.546 \cdot 0.394}{0.270}$ | **0.797** |
+# Probability in a Nutshell
 
-* **Conditional independence** given $c$: $P(x_1, x_2 \mid c) = P(x_1 \mid c)\,P(x_2 \mid c)$
+## Notation: Sums, Products and Logarithms
 
-## A Model Is a Distribution
+Three tools used on almost every slide of this class:
 
-* A probabilistic model gives, for every input, a **distribution** over the target: $p(y \mid x; \theta)$
-* Linear regression: $\mathcal{N}(w^\top x + b, \sigma^2)$; logistic: Bernoulli$(\sigma(w^\top x + b))$
-* The **likelihood**: the probability of the *observed* data, as a function of $\theta$:
+| Symbol | Meaning | Example |
+|:--------------------|:------------------------------|:-----------------------|
+| $\sum_{i=1}^{N} a_i$ | add $a_1 + a_2 + \dots + a_N$ | $\sum_{i=1}^{3} a_i = 0.5 + 0.2 + 0.1 = 0.8$ |
+| $\prod_{i=1}^{N} a_i$ | multiply $a_1 \cdot a_2 \cdots a_N$ | $\prod_{i=1}^{3} a_i = 0.5 \cdot 0.2 \cdot 0.1 = 0.01$ |
+| $\log a$ | natural logarithm ($\log e = 1$) | $\log 0.01 = -4.61$ |
+
+* **Logarithm turns products into sums:** $\log(a\,b) = \log a + \log b$, so $\log\prod_i a_i = \sum_i \log a_i$
+* It is **increasing**: the $\theta$ that maximizes $f(\theta)$ also maximizes $\log f(\theta)$
+* For $0 < p \le 1$: $\log p \le 0$, and $\log p \to -\infty$ as $p \to 0$
+
+## Probability: How Likely Is an Outcome?
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, at={(0,0)}, width=0.3\textwidth, height=3cm, ybar, bar width=14pt, enlarge x limits=0.5, symbolic x coords={ham,spam}, xtick=data, ymin=0, ymax=0.8, ylabel={$P$}, title={\scriptsize discrete: a mass per value}, title style={yshift=-1mm}, nodes near coords, nodes near coords style={font=\scriptsize}]
+  \addplot[fill=cblue!40, draw=cblue] coordinates {(ham,0.606) (spam,0.394)};
+\end{axis}
+\begin{axis}[faa, at={(5.6cm,0)}, width=0.4\textwidth, height=3cm, xmin=-3.5, xmax=3.5, ymin=0, ymax=0.5, ytick=\empty, xlabel={$x$}, title={\scriptsize continuous: an area per interval}, title style={yshift=-1mm}]
+  \addplot[cblue, domain=-3.5:3.5, samples=80] {exp(-x^2/2)/sqrt(2*pi)};
+  \addplot[cblue, fill=cblue!30, domain=0.5:1.5, samples=30] {exp(-x^2/2)/sqrt(2*pi)} \closedcycle;
+  \node[font=\scriptsize] at (axis cs:1.0,0.07) {$P$};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* A **random variable** is a quantity that depends on chance: the label of an e-mail, a word count, a price. $P(A)$ is a number in $[0, 1]$ and the values add to 1
+* Estimated by **frequency**: $P(\text{spam}) = 1813 / 4601 = 0.394$
+* **Discrete** (few values): a probability *per value*. **Continuous** (a real number): a **density**; a probability is the *area* under it, and a single point has probability 0
+
+## A Distribution and Its Parameters
+
+A **distribution** says how likely each value is; its **parameters** are the few numbers that fix its shape.
+
+| Distribution | Describes | Parameters | Probability of $x$ |
+|:-------------|:------------------------|:----------------|:-------------------------------------|
+| Bernoulli | yes/no (spam? word present?) | $\theta = P(x{=}1)$ | $\theta^{x}(1-\theta)^{1-x}$ |
+| Categorical | one of $M$ values (a bin) | $\theta_1,\dots,\theta_M$, sum 1 | $\theta_m$ |
+| Gaussian | a number around a centre | mean $\mu$, variance $\sigma^2$ | $\frac{1}{\sqrt{2\pi\sigma^2}}\,e^{-(x-\mu)^2/2\sigma^2}$ |
+| Laplace | same, heavier tails | centre $\mu$, scale $b$ | $\frac{1}{2b}\,e^{-\lvert x-\mu\rvert/b}$ |
+
+* **Learning a distribution = estimating its parameters from data**: this whole class
+* The coin: Bernoulli with $\theta = P(\text{heads})$. The sum of the outcomes' probabilities is always 1
+
+## Joint, Marginal and Conditional
+
+4601 e-mails, counted by class and by the presence of the word "free":
+
+| | ham | spam | total |
+|:----------------|------:|------:|------:|
+| "free" absent | 2536 | 824 | 3360 |
+| "free" present | 252 | 989 | 1241 |
+| total | 2788 | 1813 | 4601 |
+
+* **Joint** $P(\text{free}, \text{spam}) = 989 / 4601 = 0.215$: both at once
+* **Marginal** $P(\text{free}) = 1241 / 4601 = 0.270$: ignore the class (add the row)
+* **Conditional** $P(\text{spam} \mid \text{free}) = 989 / 1241 = \mathbf{0.797}$: look **only** at the e-mails with "free", ask the spam fraction. Without "free": $824/3360 = 0.245$
+* **Product rule:** $P(x, y) = P(x \mid y)\,P(y) = P(y \mid x)\,P(x)$
+
+## Independence
+
+Two events are **independent** if knowing one says nothing about the other: $P(a, b) = P(a)\,P(b)$.
+
+| Spam data | $P(\text{free}, \text{money})$ | $P(\text{free})\,P(\text{money})$ |
+|:------------------------|-----------:|-----------:|
+| all e-mails | 0.099 | 0.043 |
+| spam only | 0.241 | 0.205 |
+| ham only | 0.0068 | 0.0018 |
+
+* "free" and "money" are **not independent**: seeing one makes the other more likely (both announce spam)
+* Inside one class the dependence is weaker (spam: 0.241 against 0.205): **conditional independence** given the class $c$, $P(a, b \mid c) = P(a \mid c)\,P(b \mid c)$
+* An assumption that is *false but useful* is what makes Naive Bayes work (later); here the idea matters
+
+## Bayes' Rule: Updating a Belief
+
+Write the product rule both ways, $P(x \mid y)\,P(y) = P(y \mid x)\,P(x)$, and divide:
+
+$$P(y \mid x) = \frac{P(x \mid y)\;P(y)}{P(x)}$$
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[x=0.9cm]
+  \node[note, anchor=south west] at (0,0.65) {before: $P(\text{spam})$};
+  \fill[cred!35] (0,0.1) rectangle (3.94,0.6); \fill[cblue!25] (3.94,0.1) rectangle (10,0.6); \draw (0,0.1) rectangle (10,0.6);
+  \node[note] at (1.97,0.35) {spam 39.4\%}; \node[note] at (6.97,0.35) {ham 60.6\%};
+  \node[note, anchor=south west] at (0,-0.65) {after seeing "free": $P(\text{spam} \mid \text{free})$};
+  \fill[cred!35] (0,-1.2) rectangle (7.97,-0.7); \fill[cblue!25] (7.97,-1.2) rectangle (10,-0.7); \draw (0,-1.2) rectangle (10,-0.7);
+  \node[note] at (3.98,-0.95) {spam 79.7\%}; \node[note] at (8.98,-0.95) {ham 20.3\%};
+\end{tikzpicture}
+\end{center}
+```
+
+* $P(\text{spam} \mid \text{free}) = \dfrac{0.546 \cdot 0.394}{0.270} = \mathbf{0.797}$, with $P(\text{free} \mid \text{spam}) = 0.546$
+* $P(y)$ **prior**, $P(x \mid y)$ **likelihood**, $P(x)$ **evidence**, $P(y \mid x)$ **posterior** (after the evidence)
+
+## Bayesian Learning: Unknown Parameters Are Beliefs
+
+The same rule, with the **parameters** $\theta$ as the class and the **data** $D$ as the evidence:
+
+$$p(\theta \mid D) = \frac{p(D \mid \theta)\; p(\theta)}{p(D)} \;\propto\; \underbrace{p(D \mid \theta)}_{\text{likelihood}}\; \underbrace{p(\theta)}_{\text{prior}}$$
+
+* **Likelihood** $p(D \mid \theta)$: how probable the data are under $\theta$. **Prior** $p(\theta)$: belief before the data. **Posterior** $p(\theta \mid D)$: after
+* **MLE** (maximum likelihood estimate): the $\theta$ maximizing the **likelihood**, data alone
+* **MAP** (maximum a posteriori): the $\theta$ maximizing the **posterior**, data and prior
+* Class 03: a loss is $-\log$ likelihood; a penalty is $-\log$ prior
+
+# A Model Is a Distribution
+
+## A Model Gives a Distribution for $y$
+
+* Class 03: a model gave **one number** $\hat y$ for each input $x$ (a price, a score)
+* But the real $y$ is never *exactly* $\hat y$: the data hold noise, and factors we did not measure
+* A **probabilistic model** says it honestly: for every input $x$ it gives a *distribution* of the possible targets, $p(y \mid x;\ \theta)$, with parameters $\theta$ (the weights)
+* The prediction is the *centre* of the distribution; its *spread* says how sure we are
+* Which distribution? The one that matches the **kind of target**:
+
+| Target $y$ | Kind | Distribution | Model |
+|:--------------------|:-------------------|:--------------------|:----------------------|
+| a house price | a real number | Gaussian | linear regression |
+| spam or ham | yes/no | Bernoulli | logistic regression |
+
+## Linear Regression Is a Gaussian Around the Line
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[x=1cm, y=1cm]
+  \draw[->] (0,0) -- (7.2,0) node[right] {$x$ (area)}; \draw[->] (0,0) -- (0,3.6) node[above] {$y$ (price)};
+  \draw[cgray, thick] (0,0.6) -- (7,3.75) node[right, text=black] {$\hat y = w^\top x + b$};
+  \foreach \x/\o in {0.5/0.25, 1.0/-0.3, 1.6/0.1, 2.3/0.35, 2.9/-0.2, 3.6/0.15, 4.2/-0.4, 4.9/0.3, 5.5/-0.1, 6.0/0.2, 6.5/-0.25} { \node[dot=cblue] at (\x, {0.6+0.45*\x+\o}) {}; }
+  \foreach \xc in {2, 5} {
+    \draw[cred, thick, domain=-0.9:0.9, samples=40, variable=\t] plot ({\xc+0.9*exp(-(\t)*(\t)/0.18)}, {0.6+0.45*\xc+\t});
+    \draw[cred, dashed] (\xc, {0.6+0.45*\xc-0.9}) -- (\xc, {0.6+0.45*\xc+0.9});
+  }
+  \node[note, text=cred] at (3.2,3.2) {$p(y \mid x) = \mathcal{N}(\hat y,\ \sigma^2)$};
+\end{tikzpicture}
+\end{center}
+```
+
+* House prices of equal area still differ: the model says "around $\hat y$, **small** errors common, **large** errors rare"
+* That is the **Gaussian** (bell): symmetric, most mass within $\pm 2\sigma$
+* $y = w^\top x + b + \varepsilon$, $\ \varepsilon \sim \mathcal{N}(0, \sigma^2)$ $\ \Longleftrightarrow\ $ $y \mid x \sim \mathcal{N}(w^\top x + b,\ \sigma^2)$
+
+## Logistic Regression Is a Bernoulli with a Sigmoid
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, height=3.4cm, width=0.62\textwidth, xmin=-5, xmax=5, ymin=0, ymax=1.05, xlabel={score $z = w^\top x + b$}, ylabel={$p = P(\text{spam} \mid x)$}, ytick={0,0.5,1}]
+  \addplot[cblue, domain=-5:5, samples=80] {1/(1+exp(-x))};
+  \addplot[only marks, mark=*, cred, mark size=1.6pt] coordinates {(-1.4,0.198) (1.4,0.802)};
+  \node[note, anchor=east, text=cred] at (axis cs:1.3,0.93) {$p = 0.80$: spam};
+  \node[note, anchor=east, text=cred] at (axis cs:-1.6,0.33) {$p = 0.20$};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* The label is **yes/no**: the only distribution for a yes/no is the **Bernoulli**, with one parameter $p = P(y = 1 \mid x)$
+* A probability must stay in $[0, 1]$, but the linear score $w^\top x + b$ does not: the **sigmoid** squeezes it (Class 03)
+* $y \mid x \sim \text{Bernoulli}\big(\sigma(w^\top x + b)\big)$: the model **is** the parameter of a coin, chosen per e-mail
+
+## The Likelihood of a Dataset
+
+The model gives a probability to the label we *actually observed*. Examples are **independent**, so the probabilities multiply:
 
 $$L(\theta) = p(D \mid \theta) = \prod_{i=1}^{N} p(y_i \mid x_i;\ \theta)$$
 
 $$\ell(\theta) = \log L(\theta) = \sum_{i=1}^{N} \log p(y_i \mid x_i;\ \theta)$$
 
-* A **product** of probabilities; its logarithm is a **sum**. $L(\theta)$ is **not** a distribution over $\theta$
+| e-mail | label $y$ | model says $p = P(\text{spam})$ | probability of the observed label |
+|:-:|:-:|:-:|:-:|
+| 1 | spam | 0.9 | 0.9 |
+| 2 | ham | 0.2 | $1 - 0.2 = 0.8$ |
+| 3 | spam | 0.6 | 0.6 |
+
+* $L = 0.9 \cdot 0.8 \cdot 0.6 = 0.432$, and $\ell = \log 0.9 + \log 0.8 + \log 0.6 = -0.839$
+* $L$ is a function of the **parameters** $\theta$ (the data are fixed). It is **not** a distribution over $\theta$: it does not add up to 1
 
 # Maximum Likelihood
 
 ## The Maximum Likelihood Estimate
 
+The **likelihood** measures how well the parameters $\theta$ explain the data. Choose the parameters under which the data we saw are **least surprising**:
+
 $$\hat\theta_{MLE} = \arg\max_\theta\; \ell(\theta) = \arg\min_\theta\; \underbrace{-\sum_i \log p(y_i \mid x_i;\ \theta)}_{\text{negative log-likelihood (NLL)}}$$
 
-* Choose the parameters under which the data we saw are **least surprising**
-* Maximizing $\ell$ = minimizing the NLL: **this is the loss** we have been minimizing
-* Class 01: $-\log p$ is a **code length** in nats; MLE picks the model that compresses the data best (MDL without the model cost)
-* Two ways to solve it: set the derivative to zero (**closed form**, often *counting*) or descend the NLL with `jax.grad`
+* Maximizing $\ell$ = **minimizing the NLL**, which will turn out to be **the loss** of Class 03
+* Class 01: $-\log p$ is a **code length** in nats: MLE picks the model that compresses the data best
+* Two ways to solve it: derivative to zero (**closed form**, often *counting*) or **descend** the NLL with `jax.grad`
+
+## Negative Log-Likelihood: the Surprise of the Data
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, height=2.6cm, width=0.5\textwidth, xmin=0, xmax=1, ymin=0, ymax=4, xlabel={probability $p$}, ylabel={$-\log p$}, ytick={0,2,4}]
+  \addplot[cred, domain=0.02:1, samples=100] {-ln(x)};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+| the model said | $p = 1$ | $0.5$ | $0.1$ | $0.01$ | $10^{-6}$ | $0$ |
+|:-------------------|:-:|:-:|:-:|:-:|:-:|:-:|
+| surprise $-\log p$ | 0 | 0.69 | 2.30 | 4.61 | 13.8 | $\infty$ |
+
+* $-\log p$ is the **surprise** at an event the model gave probability $p$: none if certain, huge if "impossible"
+* The **NLL** is the total surprise of the data: $0.105 + 0.223 + 0.511 = 0.839$ for the three e-mails
+* A loss that sums a cost per example: confident and *wrong* costs a lot
 
 ## Worked Example: a Coin
 
@@ -89,7 +287,7 @@ $n = 10$ tosses, $k = 7$ heads. Likelihood of the head probability $\theta$: $\ 
 \begin{axis}[faa, height=3.6cm, width=0.62\textwidth, xmin=0, xmax=1, ymin=0, ymax=0.0025, xlabel={$\theta$}, ylabel={$L(\theta)$}, ytick=\empty]
   \addplot[cblue, domain=0:1, samples=100] {x^7*(1-x)^3};
   \draw[cred, dashed] (axis cs:0.7,0) -- (axis cs:0.7,0.00222);
-  \node[font=\scriptsize, cred, anchor=west] at (axis cs:0.72,0.0021) {$\hat\theta = 0.7$};
+  \node[font=\scriptsize, cred, anchor=east] at (axis cs:0.68,0.0021) {$\hat\theta = 0.7$};
 \end{axis}
 \end{tikzpicture}
 \end{center}
@@ -100,6 +298,8 @@ $$\ell(\theta) = k\log\theta + (n-k)\log(1-\theta), \qquad \ell'(\theta) = \frac
 * The MLE of a probability is the **relative frequency**: counting
 
 ## The Same Estimate with `jax.grad`
+
+Counting is not the only way: write the NLL and let the Class 02 machinery minimize it.
 
 ```python
 def neg_loglik(phi, k, n):                    # phi = logit of theta
@@ -118,11 +318,17 @@ for _ in range(200):
 
 ## Worked Example: a Gaussian
 
-$x = (2.1, 1.9, 2.6, 2.4, 3.0)$, $\ x_i \sim \mathcal{N}(\mu, \sigma^2)$
+Five measurements $x = (2.1, 1.9, 2.6, 2.4, 3.0)$, assumed $x_i \sim \mathcal{N}(\mu, \sigma^2)$: two parameters to estimate.
 
 $$-\ell(\mu, \sigma) = \frac{n}{2}\log(2\pi\sigma^2) + \frac{1}{2\sigma^2}\sum_i (x_i - \mu)^2$$
 
-$$\Longrightarrow\quad \hat\mu = \bar x, \qquad \hat\sigma^2 = \frac{1}{n}\sum_i (x_i - \bar x)^2$$
+$$\Longrightarrow\quad \hat\mu = \bar x = \frac{1}{n}\sum_i x_i, \qquad \hat\sigma^2 = \frac{1}{n}\sum_i (x_i - \bar x)^2$$
+
+* Derivatives set to zero: the MLE of the mean is the **average**, of the variance the **average squared deviation**
+* A **closed formula**: one pass over the data, no search
+* `jax.grad` on $(\mu, \log\sigma)$ agrees ($4\cdot10^{-16}$ apart)
+
+## A Gaussian Fit, and the Bias of the MLE Variance
 
 | | Value |
 |:----------------------------------|--------:|
@@ -130,9 +336,69 @@ $$\Longrightarrow\quad \hat\mu = \bar x, \qquad \hat\sigma^2 = \frac{1}{n}\sum_i
 | $\hat\sigma^2_{MLE}$ (divide by $n$): $\ 0.74 / 5$ | **0.148** |
 | unbiased (divide by $n - 1$): $\ 0.74 / 4$ | 0.185 |
 
-* `jax.grad` on $(\mu, \log\sigma)$ agrees ($4\cdot10^{-16}$); the MLE variance is **biased**: **0.798** on average for a true 1 ($n = 5$)
+* The MLE variance is **biased**: it measures the spread around $\bar x$, which was fitted to *these* points, so it is too small
+* On average **0.798** for a true variance of 1 with $n = 5$ (the factor $(n-1)/n$)
+* A small sample misleads the MLE: a theme of this class
 
-## The Loss Is a Negative Log-Likelihood
+## MLE: Counting, Formulas or Descending
+
+How the minimum of the NLL is found depends on the kind of variable:
+
+| Model | Variable | MLE found by |
+|:--------------------------|:---------------|:----------------------|
+| Bernoulli, categorical, NB | **discrete** | **counting** |
+| Gaussian mean, variance | **continuous** | a formula |
+| linear regression | continuous | normal equation |
+| logistic regression, nets | no closed form | **gradient descent** |
+
+* **Counting** needs **discrete** values to count: spam as "word present or not", a colour, a bin
+* A **continuous** variable has none: choose a distribution (a Gaussian, ...) and estimate its parameters (Naive Bayes, below)
+* No closed form $\Rightarrow$ the optimization problem of Class 02
+
+## Training a Probabilistic Model: the Recipe
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+  \node[fillbox=cgray, text width=1.9cm] (a) {\textbf{1.} the \textbf{target} picks the distribution};
+  \node[fillbox=cblue, text width=1.9cm, right=4mm of a] (b) {\textbf{2.} the model gives its parameters};
+  \node[fillbox=corange, text width=1.9cm, right=4mm of b] (c) {\textbf{3.} write the \textbf{NLL} of the data};
+  \node[fillbox=cgreen, text width=1.9cm, right=4mm of c] (d) {\textbf{4.} minimize it};
+  \draw[flow] (a) -- (b); \draw[flow] (b) -- (c); \draw[flow] (c) -- (d);
+\end{tikzpicture}
+\end{center}
+```
+
+* **1:** a number $\to$ Gaussian; yes/no $\to$ Bernoulli; one of $M$ values $\to$ categorical
+* **2:** mean $w^\top x + b$ (Gaussian) or probability $\sigma(w^\top x + b)$ (Bernoulli)
+* **4:** counting, a formula, or `jax.grad` with a Class 02 optimizer
+* The NLL **is the loss**: a different distribution gives a different loss (next two slides)
+
+## From NLL to the Squared Error
+
+Gaussian noise: $\ p(y \mid x) = \dfrac{1}{\sqrt{2\pi\sigma^2}}\,e^{-(y - \hat y)^2 / 2\sigma^2}$
+
+$$-\log p(y \mid x) = \tfrac{1}{2}\log(2\pi\sigma^2) + \frac{(y - \hat y)^2}{2\sigma^2}$$
+
+$$\text{NLL} = \frac{N}{2}\log(2\pi\sigma^2) + \frac{1}{2\sigma^2}\underbrace{\sum_{i}(y_i - \hat y_i)^2}_{\text{depends on the weights}}$$
+
+* Only the sum of squares depends on the weights: minimizing the NLL **is** minimizing the **MSE**
+* **Why squares:** the bell makes an error of $3\sigma$ *very* rare: cost $9/2 = 4.5$ nats, against $0.5$ for $1\sigma$
+
+## From NLL to Cross-Entropy and to the Absolute Error
+
+Bernoulli label, $p = \sigma(w^\top x + b)$: $\ p(y \mid x) = p^{\,y}(1 - p)^{1 - y}$
+
+$$-\log p(y \mid x) = -y\log p - (1 - y)\log(1 - p)$$
+
+$\Longrightarrow$ **binary cross-entropy**; its mean over a classifier **is** `log_loss` (0.542279 = 0.542279)
+
+Laplace noise: $\ p(y \mid x) = \dfrac{1}{2b}\,e^{-\lvert y - \hat y\rvert / b}$, so $-\log p = \dfrac{\lvert y - \hat y\rvert}{b} + \log 2b$ $\Longrightarrow$ **absolute error (MAE)**
+
+* **Why a log:** the NLL is the surprise at the label that happened: confident and *wrong* costs a lot
+* Heavier tails: an outlier is less surprising and pulls less (slope 0.523 against 0.537 for the Gaussian; true 0.50)
+
+## Every Loss Is a Negative Log-Likelihood
 
 | Noise / label model | NLL (up to constants) | Loss |
 |:--------------------------|:----------------------------------|:----------------------|
@@ -141,23 +407,14 @@ $$\Longrightarrow\quad \hat\mu = \bar x, \qquad \hat\sigma^2 = \frac{1}{n}\sum_i
 | Bernoulli | $-y\log p - (1-y)\log(1-p)$ | **cross-entropy** |
 | Categorical (softmax) | $-\log p_y$ | softmax cross-entropy |
 
-* Gaussian NLL gives **exactly** the least-squares weights ($2\cdot10^{-15}$ on housing); $\hat\sigma^2$ = training MSE (0.4546)
-* The mean NLL of a classifier **is** `log_loss` (0.542279 = 0.542279)
-* Two outliers pull the Gaussian fit (slope 0.537) more than the Laplace fit (0.523); true slope 0.50
-
-## MLE: Counting or Descending
-
-| Model | MLE is found by | Cost |
-|:--------------------------|:------------------------------|:----------------------|
-| Bernoulli, categorical, Naive Bayes | **counting** frequencies | one pass over the data |
-| Gaussian mean and variance | sample mean, biased variance | one pass |
-| linear regression | normal equation | $O(Nd^2 + d^3)$ |
-| logistic regression, neural networks | gradient descent on the NLL | many passes |
-
-* When the derivative can be solved in closed form, MLE is **free of any optimizer**: that is why Naive Bayes trains in one pass
-* When it cannot, it is the optimization problem of Class 02, with the NLL as the objective
+* **Choosing a loss = choosing a distribution** for the target. A new kind of target (counts, positive numbers) $\to$ a new distribution $\to$ a new loss (GLMs of Class 03)
+* The penalties of ridge and lasso are not in this table: they come from the **prior**, in the next section
 
 ## The Weakness of MLE
+
+```{=latex}
+\renewcommand{\arraystretch}{1.1}
+```
 
 | $n$ | $k$ | $\hat\theta_{MLE}$ |
 |:-:|:-:|--:|
@@ -170,34 +427,86 @@ $$\Longrightarrow\quad \hat\mu = \bar x, \qquad \hat\sigma^2 = \frac{1}{n}\sum_i
 * MLE fits the data it has, with no way to say "I have seen too little": **overfitting** again (Class 01)
 * Remedy: encode what we believed *before* the data as a **prior**, and combine the two: **MAP**
 
-## Live Demo M1--M3: Maximum Likelihood
+## DEMO M0--M3: Notebook
 
-* Notebook `01_mle_map.ipynb`, sections **M1** to **M3**
-* The coin: likelihood, log-likelihood, and `jax.grad` descent to $0.7$; the Gaussian MLE and its bias
-* Gaussian noise $\to$ MSE, Bernoulli $\to$ cross-entropy, Laplace $\to$ MAE with outliers
-* Question: which noise model would you choose for house prices with a few luxury mansions?
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO M0--M3:}\\[5mm]
+{\LARGE\ttfamily 01\_mle\_map.ipynb}
+\end{center}
+```
 
 # Maximum A Posteriori
 
 ## Bayes' Rule for the Parameter
 
+The data alone cannot say "I have seen too little". Bayes' rule adds **what we believed before**:
+
 $$p(\theta \mid D) = \frac{p(D \mid \theta)\; p(\theta)}{p(D)} \;\propto\; \underbrace{p(D \mid \theta)}_{\text{likelihood}}\; \underbrace{p(\theta)}_{\text{prior}}$$
 
-$$\hat\theta_{MAP} = \arg\max_\theta\; \big[\log p(D \mid \theta) + \log p(\theta)\big] = \arg\min_\theta\; \big[\text{NLL} \;+\; \text{penalty}\big]$$
+$$\hat\theta_{MAP} = \arg\max_\theta\; \big[\log p(D \mid \theta) + \log p(\theta)\big]$$
 
-* The **prior** $p(\theta)$: what we believe about the parameter before the data. The **posterior**: after
+$$\phantom{\hat\theta_{MAP}} = \arg\min_\theta\; \big[\text{NLL} + \text{penalty}\big]$$
+
 * MAP = MLE **plus a penalty** $-\log p(\theta)$: the regularization of Class 03, now with a meaning
 * As $N$ grows the likelihood (a sum of $N$ terms) overwhelms the prior: **MAP $\to$ MLE**
 
-## Beta Prior for a Probability
+## Prior, Likelihood and Posterior: a Picture
+
+The coin again, with a prior that says "the coin is probably fair": $\ 10$ tosses, $7$ heads.
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, height=4cm, width=0.75\textwidth, xmin=0, xmax=1, ymin=0, ymax=4.6, xlabel={$\theta$ (probability of heads)}, ytick=\empty]
+  \addplot[cgray, domain=0:1, samples=120] {630*x^4*(1-x)^4};
+  \addplot[corange, domain=0:1, samples=120] {1320*x^7*(1-x)^3};
+  \addplot[cblue, domain=0:1, samples=120] {604656*x^11*(1-x)^7};
+  \node[font=\scriptsize, cgray, anchor=east] at (axis cs:0.27,1.5) {prior Beta(5,5)};
+  \node[font=\scriptsize, corange, anchor=west] at (axis cs:0.84,2.6) {likelihood};
+  \node[font=\scriptsize, cblue, anchor=east] at (axis cs:0.47,3.2) {posterior};
+  \draw[corange, dashed] (axis cs:0.7,0) -- (axis cs:0.7,2.95); \node[font=\scriptsize, corange, anchor=west] at (axis cs:0.72,4.1) {MLE 0.70};
+  \draw[cblue, dashed] (axis cs:0.611,0) -- (axis cs:0.611,3.6); \node[font=\scriptsize, cblue, anchor=east] at (axis cs:0.6,4.1) {MAP 0.61};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* The posterior is a **compromise**: between the data (0.70) and the prior (0.50), and narrower than either
+* With little data the prior pulls hard; with much data the likelihood wins (next slides)
+
+## Which Prior for a Probability? The Beta Family
+
+A probability $\theta$ lives in $[0, 1]$, so its prior must be a density on $[0, 1]$: the **Beta($a$, $b$)** family, $\ p(\theta) \propto \theta^{a-1}(1-\theta)^{b-1}$
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, height=3.6cm, width=0.7\textwidth, xmin=0, xmax=1, ymin=0, ymax=4.2, xlabel={$\theta$}, ytick=\empty, legend style={at={(0.5,1.05)}, anchor=south, legend columns=4}]
+  \addplot[cgray, domain=0:1, samples=2] {1}; \addlegendentry{(1,1)}
+  \addplot[cblue, domain=0:1, samples=100] {6*x*(1-x)}; \addlegendentry{(2,2)}
+  \addplot[cred, domain=0:1, samples=100] {923780*x^9*(1-x)^9}; \addlegendentry{(10,10)}
+  \addplot[corange, domain=0:1, samples=100] {42*x*(1-x)^5}; \addlegendentry{(2,6)}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* $a - 1$ and $b - 1$ are **imaginary heads and tails** seen before the data: (1,1) none, "no opinion"; (10,10) a firm belief in a fair coin; (2,6) tails likelier
+* Mean $a/(a+b)$; a larger $a + b$ is a **stronger** belief
+
+## The Beta Prior Meets the Coin
+
+Prior times likelihood: $\ \theta^{a-1}(1-\theta)^{b-1}\cdot\theta^{k}(1-\theta)^{n-k} = \theta^{a+k-1}(1-\theta)^{b+n-k-1}$
 
 $$\theta \sim \text{Beta}(a, b) \;\Longrightarrow\; \theta \mid D \sim \text{Beta}(a + k,\; b + n - k)$$
 
 $$\hat\theta_{MAP} = \frac{k + a - 1}{n + a + b - 2} \qquad\qquad \mathbb{E}[\theta \mid D] = \frac{k + a}{n + a + b}$$
 
-* $a - 1$ and $b - 1$ are **imaginary tosses** seen before the data; $a = b = 1$: none (MAP = MLE)
-* $a = b = 2$: one imaginary head and tail: $\hat\theta_{MAP} = (k+1)/(n+2)$, **Laplace's rule of succession**
-* The posterior is a full distribution: we know *how sure* we are
+* The posterior is a Beta again: **updating = adding the counts** to $a$ and $b$
+* $a = b = 2$: $\hat\theta_{MAP} = (k+1)/(n+2)$, **Laplace's rule of succession**
+* 3 heads in 3 tosses: MLE says 1.000, Beta(2,2) says $\mathbf{0.8}$
 
 ## Worked Example: the Prior Matters, then Fades
 
@@ -236,7 +545,7 @@ $$\hat\theta_{MAP} = \frac{k + a - 1}{n + a + b - 2} \qquad\qquad \mathbb{E}[\th
 
 ## Laplace Smoothing Is a Bayesian Prior
 
-* Naive Bayes estimates a word's probability from counts: $\ \theta = \dfrac{n_{cj}}{n_c}$ (MLE). A word never seen in spam gets $\theta = 0$
+* A word never seen in a spam e-mail: the MLE $\theta = n_{cj}/n_c$ is **0**. A prior repairs the zero:
 
 $$\theta_{cj} = \frac{n_{cj} + \alpha}{n_c + 2\alpha} = \hat\theta_{MAP} \text{ under a Beta}(\alpha + 1,\ \alpha + 1) \text{ prior}$$
 
@@ -246,11 +555,11 @@ $$\theta_{cj} = \frac{n_{cj} + \alpha}{n_c + 2\alpha} = \hat\theta_{MAP} \text{ 
 | `BernoulliNB(alpha=1)` = Beta(2,2) | 0.1000 |
 | `BernoulliNB(alpha=3)` = Beta(4,4) | 0.2143 |
 
-* "Add $\alpha$ imaginary e-mails of each kind": an **assumption**, not a trick. It reappears in Naive Bayes (next section) and matches scikit-learn exactly
+* $\alpha$ imaginary e-mails of each kind: an **assumption**, not a trick; it matches scikit-learn exactly
 
 ## Ridge Is a Gaussian Prior
 
-Noise $\varepsilon \sim \mathcal{N}(0, \sigma^2)$, prior $w_j \sim \mathcal{N}(0, \tau^2)$:
+The ridge penalty of Class 03 from a prior: noise $\varepsilon \sim \mathcal{N}(0, \sigma^2)$, weights $w_j \sim \mathcal{N}(0, \tau^2)$
 
 $$-\log p(w \mid D) = \frac{1}{2\sigma^2}\sum_i (y_i - w^\top x_i - b)^2 + \frac{1}{2\tau^2}\lVert w\rVert^2 + \text{const}$$
 
@@ -258,13 +567,13 @@ $$\Longrightarrow\ \text{ridge with } \alpha = \sigma^2/\tau^2$$
 
 * MAP by `jax.grad` equals `Ridge(alpha=sigma2/tau2)` to **$10^{-15}$** (here $\alpha = 0.4/0.25 = 1.6$)
 * The prior shrinks: weight norm 1.740 $\to$ 1.468 (100 housing districts)
-* A **Laplace** prior gives the **lasso**; Class 01: the penalty is the **code length of the model**
+* A **Laplace** prior gives the **lasso**
 
 ## More Than a Point: the Posterior of the Weights
 
 $$w \mid D \sim \mathcal{N}(\mu, \Sigma), \qquad \Sigma = \Big(\frac{X^\top X}{\sigma^2} + \frac{I}{\tau^2}\Big)^{-1}$$
 
-$$\mu = \frac{\Sigma X^\top y}{\sigma^2} \quad(\text{the ridge weights})$$
+$$\mu = \Sigma X^\top y / \sigma^2 \quad(\text{the ridge weights})$$
 
 | Housing, 100 examples | posterior mean | posterior std |
 |:--------------|--------:|--------:|
@@ -273,36 +582,58 @@ $$\mu = \frac{\Sigma X^\top y}{\sigma^2} \quad(\text{the ridge weights})$$
 | Latitude | $-1.078$ | 0.211 |
 | Longitude | $-1.004$ | 0.200 |
 
-* Each weight has an **uncertainty**; predictions get one too: $\text{var}(\hat y_*) = \sigma^2 + x_*^\top \Sigma\, x_*$
-* The 90% interval covers **0.905** of the test districts. The MAP is only the *peak*; the posterior is the whole answer
+* Each weight and each prediction has an **uncertainty**: $\text{var}(\hat y_*) = \sigma^2 + x_*^\top \Sigma\, x_*$; the 90% interval covers **0.905** of the test districts
 
-## Live Demo M4--M5: MAP
 
-* Notebook `01_mle_map.ipynb`, sections **M4** and **M5**
-* Beta posteriors for three priors and four data sizes; `BernoulliNB(alpha)` = a Beta prior
-* Ridge as MAP found by `jax.grad`; the Gaussian posterior of the weights and its intervals
-* Question: how would a *lasso* prior change the posterior of the weights?
+## Losses and Penalties: the Dictionary
+
+```{=latex}
+\renewcommand{\arraystretch}{1.4}
+```
+
+| Class 03 | Loss | Probability behind it |
+|:-----------------------|:-------------------------|:-------------------------------------|
+| linear regression | squared error | Gaussian noise (MLE) |
+| robust regression | absolute error | Laplace noise (MLE) |
+| logistic regression | cross-entropy | Bernoulli labels (MLE) |
+| ridge | MSE + $\lVert w\rVert^2$ | Gaussian **prior** on $w$ (MAP) |
+| lasso | MSE + $\lVert w\rVert_1$ | Laplace **prior** on $w$ (MAP) |
+| Laplace smoothing (Naive Bayes, below) | add-one counts | Beta **prior** on a probability (MAP) |
+
+* One idea: choose the parameters that make the data **most probable** (MLE), possibly **weighted by a prior** (MAP)
+
+## DEMO M4--M5: Notebook
+
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO M4--M5:}\\[5mm]
+{\LARGE\ttfamily 01\_mle\_map.ipynb}
+\end{center}
+```
 
 # Naive Bayes
 
 ## Bayes' Rule for Classification
+
+Bayes' rule with the **class** $c$ as the unknown and the features $x$ as the evidence:
 
 $$P(c \mid x) = \frac{P(c)\;P(x \mid c)}{P(x)} \;\propto\; P(c)\;P(x \mid c)$$
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-  \node[fillbox=cgray, text width=2.6cm] (p) {\textbf{prior} $P(c)$\\ before seeing $x$: 39.4\% spam};
-  \node[fillbox=corange, text width=3.2cm, right=12mm of p] (l) {\textbf{likelihood} $P(x \mid c)$\\ how typical is $x$ for class $c$};
-  \node[fillbox=cgreen, text width=2.8cm, right=12mm of l] (q) {\textbf{posterior} $P(c \mid x)$\\ after seeing $x$};
-  \draw[flow] (p) -- node[above, note] {$\times$} (l); \draw[flow] (l) -- node[above, note] {$\propto$} (q);
+  \node[fillbox=cgray, text width=2.4cm] (p) {\textbf{prior} $P(c)$\\ before seeing $x$: 39.4\% spam};
+  \node[fillbox=corange, text width=2.8cm, right=10mm of p] (l) {\textbf{likelihood} $P(x \mid c)$\\ how typical is $x$ for class $c$};
+  \node[fillbox=cgreen, text width=2.4cm, right=10mm of l] (q) {\textbf{posterior} $P(c \mid x)$\\ after seeing $x$};
+  \draw[flow] (p) -- (l); \draw[flow] (l) -- (q);
 \end{tikzpicture}
 \end{center}
 ```
 
-* Choose the class with the largest posterior: $\hat c = \arg\max_c\; P(c)\,P(x \mid c)$. The evidence $P(x)$ is the same for every class, so it can be ignored
-* A **generative** model: it models *how each class produces the features*, then inverts with Bayes
-* Prior: from class counts (0.394 spam). The hard part is the likelihood $P(x \mid c)$ of 57 features together
+* Choose $\hat c = \arg\max_c\; P(c)\,P(x \mid c)$; $P(x)$ is the same for every class and is dropped
+* A **generative** model: it models how each class *produces* the features, then inverts with Bayes
+* The hard part is $P(x \mid c)$ of 57 features **together**
 
 ## The Naive Assumption
 
@@ -324,18 +655,20 @@ P(x_1, \dots, x_d \mid c) &= \prod_{j=1}^{d} P(x_j \mid c)\\
 * Given the class, the features are **independent**: false in practice, yet it works
 * A full joint over 57 binary features: $3 \cdot 10^{17}$ numbers; the naive model: **115**
 
-## Training Is Counting
+## Training Is Estimating Distributions
 
-| Feature | Model of $P(x_j \mid c)$ | Estimated by (max. likelihood) |
+Training Naive Bayes means estimating, **per class**, a distribution for each feature:
+
+| Feature | Distribution of $P(x_j \mid c)$ | Estimated by (maximum likelihood) |
 |:--------------------|:---------------------------|:-------------------------------------|
-| binary (word present) | Bernoulli($\theta_{cj}$) | $\theta_{cj} = n_{cj} / n_c$ |
-| categorical (a bin) | categorical | relative frequency of each value in class $c$ |
-| continuous | Gaussian($\mu_{cj}, \sigma_{cj}^2$) | class mean and class variance |
-| prior | $P(c)$ | $n_c / n$ |
+| binary (word present) | Bernoulli($\theta_{cj}$) | **counting**: $\theta_{cj} = n_{cj} / n_c$ |
+| categorical (a bin) | categorical | **counting** each value |
+| continuous | a **chosen** distribution | its MLE formulas |
+| prior | $P(c)$ | **counting**: $n_c / n$ |
 
-* $n_c$: training examples of class $c$; $n_{cj}$: those in which feature $j$ is present
-* **No gradient, no iteration, no learning rate**: one pass over the data
-* Prediction: a **sum of logs**, one term per feature. In the lab it is a single matrix operation, scored for all e-mails at once with `jax.numpy`
+* $n_c$: examples of class $c$; $n_{cj}$: those with feature $j$ present
+* **Discrete** features are *counted*; a **continuous** one has nothing to count: *assume a shape* and fit its parameters
+* **No gradient, no learning rate**: one pass over the data
 
 ## Worked Example: a Six-E-Mail Corpus
 
@@ -374,6 +707,8 @@ $\theta_{cj} = (n_{cj} + \alpha)\,/\,(n_c + 2\alpha)$ for a binary feature. $\ x
 
 ## Laplace Smoothing on Real Data
 
+An e-mail to classify may contain a word that **never appeared in one class** of the training set: with $\theta = 0$ that class gets probability **exactly 0** (an *unseen word*).
+
 | Training e-mails | $\alpha = 0$: accuracy | test e-mails with an impossible class | $\alpha = 1$: accuracy |
 |:-:|:-:|:-:|:-:|
 | 20 | 0.808 | 807 of 921 | 0.836 |
@@ -381,19 +716,30 @@ $\theta_{cj} = (n_{cj} + \alpha)\,/\,(n_c + 2\alpha)$ for a binary feature. $\ x
 | 100 | 0.849 | 551 | 0.885 |
 | 1000 | 0.895 | 93 | 0.894 |
 
-* Spam data, Bernoulli NB on "word present". With $\alpha = 0$ most test e-mails contain a word unseen in one class: that class scores $-\infty$
-* The lab agrees: 20 training e-mails, **771 of 921** impossible (accuracy 0.788 against 0.806)
-* The effect fades with data, never for **rare** words: $\alpha = 1$ (Laplace) or tuned ($\alpha < 1$: Lidstone)
-* It is a **MAP estimate** (previous section): $\alpha$ imaginary observations. Gaussian NB has a variance floor, `var_smoothing`
+* With 20 training e-mails, **19 of 57** words never occur in spam: most test e-mails contain one
+* Smoothing gives an unseen word a **small** probability $\alpha/(n_c + 2\alpha)$: rare is not impossible. A **MAP estimate**; it keeps the log finite. Fades with data, never for **rare** words
+
+## Floats Are Limited
+
+A computer stores a real number in **32 or 64 bits**: a *largest*, a *smallest* and a *precision*. Smaller than the limit is rounded to **0.0**.
+
+| | `float32` | `float64` |
+|:--------------------------|----------------:|----------------:|
+| smallest normal number | $1.2\cdot10^{-38}$ | $2.2\cdot10^{-308}$ |
+| smallest of any size | $1.4\cdot10^{-45}$ | $5\cdot10^{-324}$ |
+
+* 57 factors of $0.05$: $7\cdot10^{-75}$, **0.0 in `float32`**. Real spam e-mails: $P(x \mid c)$ down to $10^{-39.4}$, at the limit
+* A **text** model: 200 words of probability $0.01$ give $10^{-400}$, **0.0 even in `float64`**
+* Both classes at 0.0: the $\arg\max$ is **meaningless**, with no error message
 
 ## Work in Log Space
 
 $$\log P(c \mid x) = \log P(c) + \sum_{j} \log P(x_j \mid c) - \log Z$$
 
-* 57 factors around 0.05 give $10^{-74}$; a text model with 50 000 words underflows to 0.0 in floating point. **Sums of logs never do**
-* The class is the $\arg\max$ of the log score: no normalization needed
-* For a probability, normalize with `logsumexp` ($Z = \sum_{c'} P(c')P(x \mid c')$)
-* Bernoulli score with `jnp.where`: $\log\theta_{cj}$ if the word is present, $\log(1 - \theta_{cj})$ if not. This also avoids the $0 \cdot (-\infty)$ that $x\log\theta + (1-x)\log(1-\theta)$ produces for an unseen word
+* $10^{-400}$ is $\log = -921$: **sums of logs never underflow**. Log space is a *numerical-stability requirement*
+* Smoothing is the other half: a probability of 0 gives $\log 0 = -\infty$, which breaks sums and gradients; it also lets **unseen words** count
+* The class is the $\arg\max$ of the log score. For a probability, normalize with `logsumexp`
+* Bernoulli score with `jnp.where`: $\log\theta_{cj}$ if present, $\log(1 - \theta_{cj})$ if not (avoids $0 \cdot (-\infty)$)
 
 ## What the Model Learned
 
@@ -414,12 +760,12 @@ $$\log P(c \mid x) = \log P(c) + \sum_{j} \log P(x_j \mid c) - \log Z$$
 
 $$P(x_j \mid c) = \frac{1}{\sqrt{2\pi\sigma_{cj}^2}}\exp\Big(-\frac{(x_j - \mu_{cj})^2}{2\sigma_{cj}^2}\Big)$$
 
-$\hat\mu_{cj}$ and $\hat\sigma_{cj}^2$: the class mean and class variance of feature $j$
+The usual choice for a continuous feature: **one bell per class**; $\hat\mu_{cj}$, $\hat\sigma_{cj}^2$ are the class mean and variance of feature $j$
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=3.6cm, width=0.66\textwidth, xmin=0, xmax=4, ymin=0, ymax=1.3, xlabel={$\log(1 + \text{capital\_run\_length\_average})$}, ylabel={density}, ytick=\empty, height=3cm, legend style={at={(0.98,0.98)}, anchor=north east}]
+\begin{axis}[faa, width=0.66\textwidth, xmin=0, xmax=4, ymin=0, ymax=1.3, xlabel={$\log(1 + \text{capital\_run\_length\_average})$}, ylabel={density}, ytick=\empty, height=2.6cm, legend style={at={(0.98,0.98)}, anchor=north east}]
   \addplot[cblue, domain=0:4, samples=100] {exp(-0.5*((x-1.110)/0.354)^2)/(0.354*sqrt(2*pi))}; \addlegendentry{ham: $\mu = 1.11$, $\sigma = 0.35$}
   \addplot[cred, domain=0:4, samples=100] {exp(-0.5*((x-1.660)/0.741)^2)/(0.741*sqrt(2*pi))}; \addlegendentry{spam: $\mu = 1.66$, $\sigma = 0.74$}
 \end{axis}
@@ -427,38 +773,58 @@ $\hat\mu_{cj}$ and $\hat\sigma_{cj}^2$: the class mean and class variance of fea
 \end{center}
 ```
 
-* One bell per feature and class ($2 \times 57$ means and variances); spam shouts more, and more variably
-* Different variances per class: a **quadratic** boundary (logistic regression: linear)
+* $2 \times 57$ means and variances; spam shouts more. Different variances: a **quadratic** boundary
+
+## Is the Gaussian the Right Bell?
+
+**Look at the histogram first.** Ham e-mails, `capital_run_length_average`:
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[faa, height=3cm, width=0.7\textwidth, xmin=1, xmax=8, ymin=0, ymax=0.75, xlabel={capital\_run\_length\_average}, ytick=\empty, legend style={at={(0.98,0.98)}, anchor=north east}]
+  \addplot+[ybar interval, fill=cgray!25, draw=cgray, mark=none, thin] coordinates {(1.0,0.594) (1.5,0.511) (2.0,0.365) (2.5,0.186) (3.0,0.118) (3.5,0.064) (4.0,0.051) (4.5,0.024) (5.0,0.015) (5.5,0.023) (6.0,0.008) (6.5,0.007) (7.0,0.006) (7.5,0.002) (8.0,0)};
+  \addplot[cred, domain=1:8, samples=100] {exp(-0.5*((x-2.291)/2.045)^2)/(2.045*sqrt(2*pi))}; \addlegendentry{Gaussian}
+  \addplot[cblue, domain=1:8, samples=100] {exp(-0.5*((ln(x)-0.671)/0.5)^2)/(0.5*sqrt(2*pi)*x)}; \addlegendentry{log-normal}
+  \addplot[corange, domain=1:8, samples=100] {0.7746*exp(-0.7746*(x-1))}; \addlegendentry{exponential}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+```
+
+* The feature starts at 1 with a long right tail: the Gaussian wastes mass **below 1**
+* Held-out log-likelihood (higher is better), ham / spam: Gaussian $-15.3$ / $-5.0$, log-normal $-1.5$ / $-2.6$, exponential $-1.6$ / $-2.9$, Laplace $-2.1$ / $-3.4$
 
 ## Categorical Features: More Than Two Values
 
 $$\theta_{cjm} = P(x_j = m \mid c) = \frac{n_{cjm} + \alpha}{n_{cj} + \alpha M} \qquad m = 1, \dots, M$$
 
 * A feature with $M$ values (a bin of a numeric feature, a colour, a word count class): one probability **per value**, by counting; $M = 2$ is the Bernoulli case
-* Numeric features become categorical by **binning**: quantile bins keep every value populated. No shape is assumed for $P(x_j \mid c)$
-* $\alpha$ is again a MAP prior (a Dirichlet with $\alpha$ imaginary observations of each value)
+* Numeric features become categorical by **binning** (quantiles): no shape is assumed
 * Spam, 4 quantile bins per feature: accuracy **0.866**, MCC **0.719** (many word bins collapse to "0" and "not 0")
 
-## Discrete or Continuous?
+## Choosing the Distribution of a Feature
 
-| Spam test set (921 e-mails) | Accuracy | MCC |
-|:----------------------------------|-----:|-----:|
-| Gaussian NB on raw frequencies | 0.845 | 0.715 |
-| Gaussian NB on $\log(1 + x)$ | 0.851 | 0.725 |
-| Categorical NB, 4 quantile bins | 0.866 | 0.719 |
-| Bernoulli NB, "word present" | **0.893** | **0.774** |
+| Spam test set (921 e-mails), 57 features | Accuracy | MCC |
+|:----------------------------------------------|-----:|-----:|
+| Gaussian NB on raw frequencies | 0.845 | 0.716 |
+| Gaussian NB on $\log(1 + x)$ (a log-normal) | 0.851 | 0.725 |
+| exponential | 0.853 | 0.729 |
+| Laplace | 0.861 | 0.741 |
+| categorical, 4 quantile bins | 0.866 | 0.719 |
+| Bernoulli, "word present" | 0.893 | 0.774 |
+| **present or not, then a log-normal for the size** | **0.899** | **0.787** |
 | logistic regression ($C = 0.1$) | *0.937* | *0.869* |
 
-* Word frequencies are **not Gaussian** (a spike at 0 and a long tail): the *coarsest* representation (present or not) wins among the NB models
-* The logarithm helps the Gaussian a little; **discretizing** makes no distributional assumption, at the price of choosing bins
-* The right question is always "what does $P(x_j \mid c)$ really look like?". Look at histograms first
+* Word frequencies have **a spike at 0** and a long tail. The best NB: a **Bernoulli** for "present?" and a log-normal for "how large?"
+* 921 test e-mails: differences below **0.01** are noise. The shape of $P(x_j \mid c)$ decides: plot first
 
 ## Generative Versus Discriminative
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}
-\begin{axis}[faa, height=4cm, width=0.72\textwidth, xmode=log, xmin=15, xmax=5000, ymin=0.78, ymax=0.96, xlabel={training examples (log)}, ylabel={test accuracy}, legend pos=south east]
+\begin{axis}[faa, height=3.3cm, width=0.72\textwidth, xmode=log, xmin=15, xmax=5000, ymin=0.78, ymax=0.96, xlabel={training examples (log)}, ylabel={test accuracy}, legend pos=south east]
   \addplot[cblue, mark=*, mark size=1.4pt] coordinates {(20,0.835) (50,0.877) (100,0.898) (300,0.925) (1000,0.939) (3680,0.94)}; \addlegendentry{logistic}
   \addplot[corange, mark=*, mark size=1.4pt] coordinates {(20,0.83) (50,0.866) (100,0.882) (300,0.884) (1000,0.895) (3680,0.893)}; \addlegendentry{Bernoulli NB}
   \addplot[cred, mark=*, mark size=1.4pt] coordinates {(20,0.81) (50,0.802) (100,0.821) (300,0.819) (1000,0.842) (3680,0.851)}; \addlegendentry{Gaussian NB}
@@ -471,13 +837,15 @@ $$\theta_{cjm} = P(x_j = m \mid c) = \frac{n_{cjm} + \alpha}{n_{cj} + \alpha M} 
 * **Logistic regression** models $P(c \mid x)$ directly: fewer assumptions; needs more data, then wins (Ng and Jordan, 2001)
 * Close at 20 examples; from about 100 logistic is ahead (0.940 against 0.893 and 0.851). Mean of 10 random subsets
 
-## Live Demo N1--N3: Naive Bayes for Classification
+## DEMO N1--N4: Notebook
 
-* Notebook `02_naive_bayes_classification.ipynb`, sections **N1** to **N3**
-* **N1:** the six-e-mail corpus by hand and by code; Bernoulli NB; the smoothing experiment
-* **N2:** class-conditional Gaussians, raw versus log features, categorical (binned) features, quadratic versus linear boundary
-* **N3:** learning curves of NB and logistic regression
-* Question: what happens to Bernoulli NB if we add a duplicate of the word `free`?
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO N1--N4:}\\[5mm]
+{\Large\ttfamily 02\_naive\_bayes\_classification.ipynb}
+\end{center}
+```
 
 # Naive Bayes for Regression
 
@@ -633,12 +1001,15 @@ $$P = 3, \qquad \hat y = \frac{2 + 2.8 + 2.2}{3} = 2.333, \qquad \text{sd} = 0.5
 * Naive Bayes regression is cheap (counting or one least-squares per feature) and gives an **uncertainty**, but the independence assumption makes it **worse than linear regression** when features are correlated
 * Use it as a fast baseline, or when a distribution over the target matters more than the last decimal of $R^2$
 
-## Live Demo R1--R4: Naive Bayes for Regression
+## DEMO R1--R4: Notebook
 
-* Notebook `03_naive_bayes_regression.ipynb`
-* **R1:** binned target, expected value versus most probable bin; the posterior of one district
-* **R2:** discrete features (3 to 20 bins); **R3:** the continuous target, the closed-form posterior checked with `jax.grad`, interval coverage
-* **R4:** duplicate a feature and watch Naive Bayes become confident and wrong
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO R1--R4:}\\[5mm]
+{\Large\ttfamily 03\_naive\_bayes\_regression.ipynb}
+\end{center}
+```
 
 # Probabilities You Can Trust
 
@@ -775,12 +1146,15 @@ $$(1 - p)\,c_{FP} < p\,c_{FN} \quad\Longleftrightarrow\quad p > t^\star = \frac{
 * Platt scaling recovers most of the loss (1.257 $\to$ 0.390); the rest is the classifier itself (independence assumption)
 * Recipe: **fit** the model $\to$ **calibrate** on held-out data $\to$ **decide** with the costs $\to$ **evaluate** the cost on the test set
 
-## Live Demo N4--N5: Calibration and Costs
+## DEMO N5--N6: Notebook
 
-* Notebook `02_naive_bayes_classification.ipynb`, sections **N4** and **N5**
-* Log-loss, Brier and ECE for three models; reliability diagrams; Platt and isotonic scaling with `CalibratedClassifierCV`
-* The expected cost against the threshold for three cost ratios; $t^\star$ against the best scanned threshold
-* Question: what would a *spam filter for a hospital* use as costs?
+```{=latex}
+\begin{center}
+\vspace{8mm}
+{\Huge\bfseries DEMO N5--N6:}\\[5mm]
+{\Large\ttfamily 02\_naive\_bayes\_classification.ipynb}
+\end{center}
+```
 
 # Summary
 
@@ -831,9 +1205,9 @@ $$(1 - p)\,c_{FP} < p\,c_{FN} \quad\Longleftrightarrow\quad p > t^\star = \frac{
 
 | Part | Task | twin |
 |:-:|:------------------------------------|:------------------------------|
-| A | MLE and MAP with `jax.grad` (Gaussian, Beta, ridge) | `Ridge`, `BernoulliNB` |
+| A | Probability and Bayes' rule; MLE and MAP with `jax.grad` (Gaussian, Beta, ridge) | `Ridge`, `BernoulliNB` |
 | B | Bernoulli NB, discrete features | `BernoulliNB` |
-| C | Gaussian and categorical NB | `GaussianNB`, `CategoricalNB` |
+| C | Gaussian, exponential and categorical NB | `GaussianNB`, `CategoricalNB` |
 | D | NB regression: binned and continuous target | `GaussianNB`, `CategoricalNB` |
 | E | log-loss, Brier, reliability; costs | `log_loss`, `calibration_curve` |
 | F | challenge: Platt scaling | `LogisticRegression` |
