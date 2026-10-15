@@ -88,7 +88,7 @@ subtitle: "Class 01 — Learning as Compression, Pitfalls & Taxonomies"
 03 & 01 Oct & 02 Oct & T3: Linear Models & \textbf{P1 released} \\
 04 & 08 Oct & 09 Oct & T3: Probabilistic Models & \\
 05 & 15 Oct & 16 Oct & T4: SVM and Neural Networks & \\
-06 & 22 Oct & 23 Oct & T5: Decision Trees and KNN & P1 checkpoint \\
+06 & 22 Oct & 23 Oct & T5: Decision Trees and KNN & \\
 07 & 29 Oct & 30 Oct & T6: Ensemble Models & \\
 \bottomrule
 \end{tabular}

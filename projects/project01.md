@@ -92,6 +92,5 @@ Every figure has a caption and is discussed in the text. Save the figures in the
 # 6. Dates
 
 * **Release:** Class 03 (01/02 October 2026)
-* **Checkpoint:** Class 06 (22/23 October 2026): dataset, data visualization and methodology
 * **Submission deadline:** Class 08 (05/06 November 2026)
 * **Weight:** 25% of the final grade

@@ -52,7 +52,7 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 | 03 | 01 Oct | 02 Oct | T3: Linear Models | **Project 1 released** |
 | 04 | 08 Oct | 09 Oct | T3: Probabilistic Models | |
 | 05 | 15 Oct | 16 Oct | T4: SVM and Neural Networks | |
-| 06 | 22 Oct | 23 Oct | T5: Decision Trees and KNN | Project 1 checkpoint |
+| 06 | 22 Oct | 23 Oct | T5: Decision Trees and KNN | |
 | 07 | 29 Oct | 30 Oct | T6: Ensemble Models | |
 | 08 | 05 Nov | 06 Nov | **Test 1** (Topics 1–6) + Project 1 synthesis | **Project 1 due** |
 | 09 | 12 Nov | 13 Nov | T7: Blind Signal Separation | **Project 2 released** |
@@ -128,6 +128,40 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 | Probabilities and decisions | Log-loss, Brier score, reliability; Platt and isotonic calibration; cost-based thresholds | [`02_naive_bayes_classification.ipynb`](notebooks/04-probabilistic-models/02_naive_bayes_classification.ipynb) — **N5–N6** |
 
 **Lab:** [`lab04_probabilistic_models.ipynb`](notebooks/04-probabilistic-models/lab04_probabilistic_models.ipynb) (helpers in `lab04_utils.py`): probability, MLE/MAP with `jax.grad`, Naive Bayes by counting, Naive Bayes regression, calibration and costs, each compared with its scikit-learn twin; solved and explained in [`solutions/lab04_probabilistic_models_solution.ipynb`](solutions/lab04_probabilistic_models_solution.ipynb).
+
+### Class 05 — SVM and Neural Networks
+
+**Slides:** [`slides/05_svm_neural_networks.pdf`](slides/05_svm_neural_networks.pdf) · **Lab guide:** [`practice/05_svm_neural_networks.pdf`](practice/05_svm_neural_networks.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| Support vector machines | Distance and margin, the maximum-margin line, support vectors, the slack and the soft margin, hinge loss + $L_2$, subgradient training, the dual view | [`01_svm.ipynb`](notebooks/05-svm-neural-networks/01_svm.ipynb) — **V1–V2** |
+| Kernels | New features and the kernel trick, polynomial and RBF kernels, the Gram matrix, the representer form trained with `jax.grad`, $\gamma$, choosing a kernel, scaling | [`01_svm.ipynb`](notebooks/05-svm-neural-networks/01_svm.ipynb) — **V3** |
+| SVM in practice | $C$ and $\gamma$ on a log grid, nested cross-validation, cost, more than two classes, probabilities (Platt), unequal costs; support vector regression and the $\varepsilon$-insensitive loss | [`01_svm.ipynb`](notebooks/05-svm-neural-networks/01_svm.ipynb) — **V4–V5** |
+| Neurons and networks | The neuron, layers as matrix products, non-linear activations, XOR, hidden units, universal approximation, the output layer and the loss by task | [`02_neural_networks.ipynb`](notebooks/05-svm-neural-networks/02_neural_networks.ipynb) — **H1** |
+| Backpropagation | The chain rule, a worked forward and backward pass, matrix form, vanishing gradients, cost | [`02_neural_networks.ipynb`](notebooks/05-svm-neural-networks/02_neural_networks.ipynb) — **H2** |
+| Training networks | Initialization, learning rate, optimizers, batch size, overfitting, weight decay, early stopping, dropout, seeds, Keras on JAX, regression | [`02_neural_networks.ipynb`](notebooks/05-svm-neural-networks/02_neural_networks.ipynb) — **H3–H5** |
+| Choosing a learner | Linear models, SVM and MLP on five datasets with the corrected resampled $t$-test | [`02_neural_networks.ipynb`](notebooks/05-svm-neural-networks/02_neural_networks.ipynb) — **H6** |
+
+**Data:** breast cancer, digits, concrete, spam, wine quality, heart disease, abalone, auto-mpg, diabetes, German credit and California housing (all in [`datasets/`](datasets/)), plus synthetic moons, circles and blobs.
+**Lab:** [`lab05_svm_neural_networks.ipynb`](notebooks/05-svm-neural-networks/lab05_svm_neural_networks.ipynb) (helpers in `lab05_utils.py`): the SVM, the kernel SVM and the SVR as losses trained with `jax.grad`, a multilayer perceptron written in JAX with its backward pass by hand and compared with scikit-learn's `MLPClassifier` and a Keras network, and networks with Keras (JAX backend); solved and explained in [`solutions/lab05_svm_neural_networks_solution.ipynb`](solutions/lab05_svm_neural_networks_solution.ipynb).
+
+### Class 06 — Decision Trees and KNN
+
+**Slides:** [`slides/06_trees_knn.pdf`](slides/06_trees_knn.pdf) · **Lab guide:** [`practice/06_trees_knn.pdf`](practice/06_trees_knn.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| Decision trees, classification | A tree as questions and as rules, the partition of the space, impurity (Gini, entropy, error), the gain, the greedy algorithm, numeric thresholds by one sorted scan, categorical features | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T1–T2** |
+| Overfitting and pruning | Stopping rules, depth and leaf size on validation data, cost-complexity pruning | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T3** |
+| Regression trees | Variance reduction, the staircase, no extrapolation, trees against linear models | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T4** |
+| Instability and importances | Bootstrap trees, impurity against permutation importance, correlated and noise features | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T5** |
+| k-nearest neighbours | The algorithm, a worked example, distances, scaling, the choice of $k$, weighted votes | [`02_knn.ipynb`](notebooks/06-trees-knn/02_knn.ipynb) — **K1–K2** |
+| KNN limits | The curse of dimensionality, irrelevant features, KNN for regression, cost of prediction (kd-tree, ball tree) | [`02_knn.ipynb`](notebooks/06-trees-knn/02_knn.ipynb) — **K3–K5** |
+| Choosing a learner | Logistic regression, naive Bayes, SVM, tree and KNN on six data sets, with the corrected resampled $t$-test | [`02_knn.ipynb`](notebooks/06-trees-knn/02_knn.ipynb) — **K5** |
+
+**Data:** breast cancer, German credit, heart disease, wine quality, digits, spam, concrete, abalone, auto-mpg and California housing (all in [`datasets/`](datasets/)), plus synthetic moons.
+**Lab:** [`lab06_trees_knn.ipynb`](notebooks/06-trees-knn/lab06_trees_knn.ipynb) (helpers in `lab06_utils.py`): impurity and the best split, a classification tree and a regression tree from scratch, pruning on validation data, KNN with `jax.numpy` for classification and regression, and a comparison on repeated splits; solved and explained in [`solutions/lab06_trees_knn_solution.ipynb`](solutions/lab06_trees_knn_solution.ipynb).
 
 ---
 

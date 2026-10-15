@@ -41,6 +41,12 @@ packages = []
 typeCheckingMode = "basic"
 failOnWarnings = false
 include = ["notebooks", "solutions"]
+# Class 05+ notebooks call scikit-learn heavily: its type stubs are imprecise (union return types, hyperparameters
+# typed as `str`), so basedpyright reports ~130 false errors there. ruff (undefined names, unused imports) still checks them.
+ignore = [
+    "notebooks/05-svm-neural-networks", "solutions/lab05_svm_neural_networks_solution.ipynb",
+    "notebooks/06-trees-knn", "solutions/lab06_trees_knn_solution.ipynb",
+]
 venvPath = "."
 venv = "venv"
 

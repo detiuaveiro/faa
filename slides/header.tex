@@ -44,3 +44,6 @@
   },
 }
 \pgfmathsetseed{2026}
+% Class 05: Example 1 (five points) shared by the SVM figures
+\pgfplotsset{exone/.style={faa, axis equal image, width=\textwidth, xmin=-0.6, xmax=3.6, ymin=-0.5, ymax=1.5, xlabel={$x_1$}, ylabel={$x_2$}, xtick={0,1,2,3}, ytick={0,1}}}
+\newcommand{\exonepts}{\addplot[only marks, mark=*, cred, mark size=2.4pt] coordinates {(0,0) (0,1)}; \addplot[only marks, mark=square*, cblue, mark size=2.4pt] coordinates {(2,0) (2,1) (3,1)};}
