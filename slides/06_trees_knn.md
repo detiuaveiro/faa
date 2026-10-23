@@ -1,6 +1,8 @@
 ---
 title: Fundamentos de Aprendizagem Automática
 subtitle: "Class 06 — Decision Trees and k-Nearest Neighbours"
+bibliography: "references.bib"
+suppress-bibliography: true
 ---
 
 # Models Without a Formula
@@ -13,30 +15,127 @@ subtitle: "Class 06 — Decision Trees and k-Nearest Neighbours"
   \node[fillbox=cblue, text width=2.4cm] (a) {\textbf{linear}\\ a line (Class 03)};
   \node[fillbox=cgreen, text width=2.4cm, right=8mm of a] (b) {\textbf{probabilistic}\\ a distribution (Class 04)};
   \node[fillbox=corange, text width=2.4cm, right=8mm of b] (c) {\textbf{margin, network}\\ kernel, layers (Class 05)};
-  \node[fillbox=cred, text width=5cm, below=7mm of b] (d) {\textbf{Class 06:} no formula at all: \emph{rules} and \emph{neighbours}};
+  \node[fillbox=cred, text width=5cm, below=7mm of b] (d) {\textbf{Class 06:} no fitted formula: \emph{rules} and \emph{neighbours}};
 \end{tikzpicture}
 \end{center}
 ```
 
-* Until now a model was **a formula with parameters** that the optimizer fitted
-* Today two models that are **algorithms on the data**: a *tree* of questions, and the *nearest neighbours*
+* Until now a model was **a formula with parameters** fitted by an optimizer
+* Today two **algorithms on the data**: a *tree* of questions and the *nearest neighbours*
+* Both are simple to explain, and powerful when used with care
+
+<!-- defines: linear -->
 
 ## What We Do Today
 
-* **Decision tree:** a sequence of yes/no questions about the features; a prediction is the answer at the end of one path. A *symbolist* learner of Project 1
-* **k-nearest neighbours (KNN):** to predict a new case, find the $k$ most similar known cases and let them vote. An *analogizer* learner of Project 1
-* Both are **non-parametric**: the model grows with the data; neither needs gradients; neither needs a loss to descend
-* Both are easy to explain to someone outside machine learning, and both fail in instructive ways
+* **Decision tree:** yes/no questions end in a prediction; the *symbolist* of Project 1
+* **Nearest neighbours:** the $k$ most similar cases vote; the *analogizer*
+* Both are **non-parametric**: the model grows with the *data*, not with a fixed parameter count
+* They keep **hyperparameters**: depth, leaf size, $k$, the distance
+* Both are easy to explain, and both fail in instructive ways
 
 ## Roadmap of the Class
 
 | Part | Question | Answer |
-|:-----------------|:-----------------------------|:--------------------------------------------|
-| **Decision trees** | which question to ask first? | the one that makes the groups **purest** |
-| | when to stop asking? | before the tree memorizes the noise |
-| **KNN** | what is "similar"? | a **distance**, which needs scaled features |
-| | how many neighbours? | the bias-variance knob, chosen on validation data |
-| **Choosing** | which learner for my data? | compare on one protocol, with a test |
+|:-------------------------------|:---------------------------|:--------------------------------|
+| **Models without a formula** | what do they share? | regions of the feature space |
+| | what is the price? | data and dimension |
+| **Decision trees** | which question first? | the purest groups |
+| | why not the best tree? | NP-complete: greedy |
+| | how to use categories? | "value in a subset" |
+| | when to stop? | before it fits the noise |
+| **k-nearest neighbours (KNN)** | what is "similar"? | a scaled distance |
+| | how many, how fast? | tune $k$; prune, approximate |
+| **Choosing** | which learner? | one protocol, a test |
+
+## Terminology: Cells and Regions
+
+Both models give one answer per *piece* of the feature space.
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[x=0.8cm, y=0.8cm]
+  \fill[cblue!22] (0,0) rectangle (2,2.4); \fill[corange!30] (2,0) rectangle (4,1.2); \fill[cblue!22] (2,1.2) rectangle (4,2.4);
+  \fill[corange!30] (4,0) rectangle (6,1.6); \fill[cblue!22] (4,1.6) rectangle (6,2.4);
+  \draw[thick] (0,0) rectangle (6,2.4); \draw (2,0) -- (2,2.4); \draw (4,0) -- (4,2.4); \draw (2,1.2) -- (4,1.2); \draw (4,1.6) -- (6,1.6);
+  \node[font=\scriptsize] at (1,1.2) {$R_1$}; \node[font=\scriptsize] at (3,0.6) {$R_2$}; \node[font=\scriptsize] at (3,1.8) {$R_3$};
+  \node[font=\scriptsize] at (5,0.8) {$R_4$}; \node[font=\scriptsize] at (5,2.0) {$R_5$};
+  \node[font=\scriptsize, anchor=south west] at (0,2.45) {$\mathcal{X}$};
+  \node[font=\scriptsize, corange!60!black, anchor=west] at (6.2,0.8) {$A_1 = R_2 \cup R_4$};
+  \node[font=\scriptsize, cblue!70!black, anchor=west] at (6.2,1.8) {$A_0 = R_1 \cup R_3 \cup R_5$};
+\end{tikzpicture}
+\end{center}
+```
+
+<!-- defines: feature space, cell, partition, class region -->
+
+| term | meaning | symbol |
+|:-------------------|:-----------------------------------------|:------------------------------:|
+| **feature space** | all values of the $d$ features | $\mathcal{X}$ |
+| **cell** | a piece of $\mathcal{X}$ with one answer | $R_j$ |
+| **answer** | the class a cell predicts | $\hat{y}_j$ |
+| **answering cells** | indices of the cells that answer $y$ | $J_y$ |
+| **partition** | cells that cover $\mathcal{X}$, no overlap | $\{R_j\}$ |
+| **class region** | all cells that answer class $y$ | $A_y = \bigcup_{j \in J_y} R_j$ |
+
+## Linear Model and Tree: Half-Planes and Boxes
+
+The same 50 points, two classes: a linear model has two cells, a tree one box per leaf.
+
+![](plots/06/b1_models.pdf)
+
+* Linear: one cut, two half-planes; training accuracy 0.840
+* **Tree, depth 3:** 6 boxes, 0.900; **depth 8:** 13 boxes, 1.000
+* The tree border is a staircase of axis-parallel steps
+
+## Nearest Neighbours: Voronoi Cells
+
+Each stored case owns a cell: the points nearer to it than to any other case.
+
+![](plots/06/b1_knn.pdf)
+
+* The **Delaunay triangulation** joins cells that share a border: 92 triangles
+* The decision border follows only 33 of the 141 shared borders
+* Fifteen neighbours smooth it: training accuracy 0.860, one neighbour 1.000
+
+## A Class Is a Set of Cells
+
+The region of a class is the union of the cells that answer it.
+
+![](plots/06/b1_sets.pdf)
+
+<!-- derivation: class-region -->
+$$
+\begin{aligned}
+A_y &= \bigcup_{j \in J_y} R_j && \text{(definition of the class region)}
+\end{aligned}
+$$
+
+* One neighbour, 50 points: $A_0$ has 25 cells (0.480 of the box), $A_1$ 25 (0.520)
+* The two regions overlap nowhere and together cover $\mathcal{X}$
+* The field: set theory and computational geometry
+
+## Any Region, Given Enough Cells
+
+A circle is neither a half-plane nor a box. Test error, 10% of the labels flipped:
+
+![](plots/06/b1_approx.pdf)
+
+* **Linear:** 0.5; tree 0.148; neighbours 0.114 ($n = 6400$)
+* One neighbour: 0.192; limit $2 \times 0.10 \times 0.90 = 0.18$ [@cover1967]
+* Neighbours are consistent [@stone1977]; trees too [@breiman1984]
+
+<!-- defines: error -->
+
+## The Price: Data and Dimension
+
+Without a functional form the price is data: the cells needed grow exponentially with the dimension $d$.
+
+![](plots/06/b1_price.pdf)
+
+* Cells of side 0.5: 16 for $d = 2$, 17 million for $d = 12$
+* At $d = 2, 8, 16$ ($n = 5000$): neighbours 0.115, 0.404, 0.494
+* The tree: 0.155, 0.326, 0.394
 
 # Decision Trees
 
@@ -56,13 +155,13 @@ Everyone has used one: a flow chart. A bank deciding on a loan might ask:
 \end{center}
 ```
 
-* Each **internal node** asks a question about *one* feature; each **branch** is an answer
-* Each **leaf** gives the prediction (a class, or a number)
-* A new case follows one path from the root to a leaf: at most *depth* questions
+* Each **internal node** asks about *one* feature; each **branch** is an answer
+* Each **leaf** gives the prediction: a class or a number
+* A new case follows one path: at most *depth* questions
 
 ## A Tree Is a Set of Rules
 
-The tree of the breast-cancer lab (depth 3, trained on 426 tumours): each path is an `if ... and ...` rule.
+A depth-3 tree of the lab (426 tumours): each path is an `if ... and ...` rule.
 
 ```
 if worst_concave_points <= 0.147:
@@ -71,128 +170,106 @@ if worst_concave_points <= 0.147:
         else:                       -> benign     (24 cases, 7 malignant)
     else:
         if worst_concavity <= 0.191: -> benign    (5 cases, 2 malignant)
-        else:                       -> malignant  (16 cases, all malignant)
+        else:                        -> malignant (16 cases, all malignant)
 else: ... -> malignant (131 cases, 2 benign)
 ```
 
-* A human can **read, check and challenge** every rule: the main reason to use a tree (medicine, credit, law)
-* The counts in each leaf say how *sure* the rule is: a leaf with 1 case is a rule built on one patient
+* A human can **read, check and challenge** every rule
+* The counts show how *sure* a rule is: one case is one patient
 
-## A Tree Cuts the Space into Boxes
+## Notation: Questions and Gain
 
-With two features, each question cuts the plane with a vertical or a horizontal line: the leaves are **rectangles**, each with one prediction.
-
-```{=latex}
-\begin{center}
-\begin{tikzpicture}
-\begin{axis}[faa, width=0.55\textwidth, height=4cm, xmin=0, xmax=10, ymin=0, ymax=10, xlabel={$x_1$}, ylabel={$x_2$}, xtick=\empty, ytick=\empty]
-  \fill[cblue!15] (axis cs:0,0) rectangle (axis cs:4,10);
-  \fill[cred!15] (axis cs:4,0) rectangle (axis cs:10,6);
-  \fill[cblue!15] (axis cs:4,6) rectangle (axis cs:10,10);
-  \draw[thick] (axis cs:4,0) -- (axis cs:4,10); \draw[thick] (axis cs:4,6) -- (axis cs:10,6);
-  \node[font=\scriptsize] at (axis cs:2,5) {$x_1 \le 4$}; \node[font=\scriptsize] at (axis cs:7,3) {$x_1 > 4,\ x_2 \le 6$}; \node[font=\scriptsize] at (axis cs:7,8) {$x_1 > 4,\ x_2 > 6$};
-\end{axis}
-\end{tikzpicture}
-\end{center}
-```
-
-* Boundaries are **axis-parallel**: a diagonal line needs many small steps (a weakness)
-* Unlike a linear model, one feature can matter in one region and not in another (*interactions* for free)
+| symbol | meaning | used in |
+|:---------------|:-----------------------------------------------------------|:----------------|
+| $n$ | examples in the group a question splits | gain |
+| $n_L$ | examples that go to the left child | gain |
+| $n_R$ | examples that go to the right child | gain |
+| $I_0$ | impurity of the parent group | gain |
+| $I_L$ | impurity of the left child | gain |
+| $I_R$ | impurity of the right child | gain |
+| $g$ | gain of a question | gain |
 
 ## Which Question First?
 
-A good question makes the groups it creates **purer**: more cases of one class in each. Example, 80 examples (40 and 40), two candidate questions:
+A good question makes the groups it creates purer. Example: 80 examples (40 and 40), two candidate questions.
 
-| question | left group | right group | how pure? |
-|:---------------|:---------------------:|:---------------------:|:---------------------------------|
-| A | 30 yes, 10 no | 10 yes, 30 no | fairly |
-| B | 40 yes, 10 no | 0 yes, 30 no | one group **perfectly** pure |
+![](plots/06/t1_questions.pdf)
 
-* We want a **number** that measures the impurity of a group, and the *gain* of a question
-* Then "which question first?" becomes "the question with the largest gain": try them all
+* We need a **number** for the impurity of a group
+* The best question is then the one with the largest **gain**
+
 
 ## Measures of Impurity
 
-For a group with class proportions $p_1, \dots, p_K$ (proportions of the group that belong to each class):
+For a group with class shares $p_1, \dots, p_K$, three measures:
 
-* **Gini index:** $\ G = 1 - \sum_k p_k^2$ — the probability that two examples drawn at random from the group have different classes
-* **Entropy:** $\ H = -\sum_k p_k \log_2 p_k$ — the average number of bits needed to name the class (Class 01)
-* **Error:** $\ E = 1 - \max_k p_k$ — the share of the group that the majority vote gets wrong
-* All are 0 for a pure group and largest when the classes are equally likely
-
-| group | $p$ | Gini | entropy | error |
-|:-----------------------|:-------------------------:|:-------------:|:---------------:|:-------------:|
-| 9 yes, 5 no | $(0.64, 0.36)$ | 0.459 | 0.940 | 0.357 |
-| 5 yes, 5 no | $(0.5, 0.5)$ | 0.500 | 1.000 | 0.500 |
-| 10 yes, 0 no | $(1, 0)$ | 0 | 0 | 0 |
+* **Gini index:** $G = 1 - \sum_k p_k^2$, the chance that two random examples differ
+* **Entropy:** $H = -\sum_k p_k \log_2 p_k$, the bits needed to name the class (Class 01)
+* **Error:** $E = 1 - \max_k p_k$, the share the majority vote gets wrong
+* All are 0 for a pure group and largest for equal classes
 
 ## The Three Curves
 
+Impurity of a two-class node against the share of class 1:
+
+![](plots/06/t1_curves.pdf)
+
+* Entropy and Gini are smooth: a purer split always lowers them
+* The error is a straight line: many useful splits leave it unchanged
+
+## The Gain of a Question
+
+A question splits $n$ examples into $n_L$ on the left and $n_R$ on the right.
+
 ```{=latex}
 \begin{center}
-\begin{tikzpicture}
-\begin{axis}[faa, height=4.4cm, width=0.62\textwidth, xmin=0, xmax=1, ymin=0, ymax=1.05, xlabel={proportion of class 1 in the node}, ylabel={impurity}, legend pos=south east]
-  \addplot[cblue, no marks, domain=0.001:0.999, samples=100] {-(x*ln(x)+(1-x)*ln(1-x))/ln(2)}; \addlegendentry{entropy}
-  \addplot[cgreen, no marks, domain=0:1, samples=50] {2*x*(1-x)*2}; \addlegendentry{Gini $\times 2$}
-  \addplot[corange, no marks, domain=0:1, samples=2] coordinates {(0,0) (0.5,1) (1,0)}; \addlegendentry{error $\times 2$}
-\end{axis}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cgray, text width=2.5cm] (p) {parent: $n = 80$\\ $I_0 = 0.5$};
+  \node[fillbox=cblue, text width=2.5cm, right=16mm of p, yshift=0.65cm] (l) {left: $n_L = 50$\\ $I_L = 0.32$};
+  \node[fillbox=cgreen, text width=2.5cm, below=3mm of l] (r) {right: $n_R = 30$\\ $I_R = 0$};
+  \draw[flow] (p.east) -- (l.west); \draw[flow] (p.east) -- (r.west);
 \end{tikzpicture}
 \end{center}
 ```
 
-* Entropy and Gini are **smooth and strictly curved**: a split that makes both children a little purer *always* lowers them
-* The error is a **straight line** on each side: many useful splits leave it unchanged (next slides)
+<!-- derivation: gain -->
+$$
+\begin{aligned}
+g &= I_0 - \frac{n_L}{n}\,I_L - \frac{n_R}{n}\,I_R && \text{(definition of the gain)}
+\end{aligned}
+$$
 
-## The Gain of a Question
-
-A question splits a group of $n$ examples into a left part of $n_L$ and a right part of $n_R$. Its **gain** is the impurity before minus the *weighted average* impurity after:
-
-$$\text{gain} = I(\text{parent}) - \frac{n_L}{n}\,I(\text{left}) - \frac{n_R}{n}\,I(\text{right})$$
-
-* The weights $n_L/n$ and $n_R/n$ make a big group count more than a small one
-* The gain is never negative: asking never makes the average group *less* pure (impurity is a concave function)
-* **Example** (the 80 examples above, Gini): parent $= 0.5$. Question B: left $(40,10)$ has $G = 0.32$, right $(0,30)$ has $G = 0$; gain $= 0.5 - \tfrac{50}{80}\cdot0.32 - \tfrac{30}{80}\cdot 0 = \mathbf{0.30}$
-* Question A: both children $(30,10)$ and $(10,30)$ have $G = 0.375$; gain $= 0.5 - 0.375 = 0.125$
+* Bigger groups weigh more; the gain is never negative
+* Gini, question B: $g = 0.5 - \tfrac{50}{80} \cdot 0.32 - 0 = 0.30$
+* Question A: both children have $I = 0.375$, $g = 0.125$
 
 ## Worked Example: Play Tennis? (1/2)
 
-14 days: is the weather good enough to play? 9 days yes, 5 days no. The root question must be chosen among four features.
+14 days: 9 play, 5 do not. Entropy of each group under two questions:
 
-| feature | value | yes | no | entropy of the group |
-|:----------------|:----------------|:-------------:|:-------------:|:--------------------------------:|
-| outlook | sunny | 2 | 3 | 0.971 |
-| | overcast | 4 | 0 | **0** |
-| | rain | 3 | 2 | 0.971 |
-| humidity | high | 3 | 4 | 0.985 |
-| | normal | 6 | 1 | 0.592 |
+![](plots/06/t1_tennis.pdf)
 
 * Parent: $H = -\tfrac{9}{14}\log_2\tfrac{9}{14} - \tfrac{5}{14}\log_2\tfrac{5}{14} = 0.940$
 * The *overcast* group is **pure**: always play
 
 ## Worked Example: Play Tennis? (2/2)
 
-Gain of **outlook**: the weighted entropy after the question, and the difference:
+The gain of **outlook** is the entropy before minus the weighted entropy after.
 
-$$\tfrac{5}{14}(0.971) + \tfrac{4}{14}(0) + \tfrac{5}{14}(0.971) = 0.694$$
+![](plots/06/t1_gains.pdf)
 
-$$\text{gain} = 0.940 - 0.694 = \mathbf{0.247}$$
-
-| question | gain (entropy) | gain (Gini) | gain (error) |
-|:---------------------|:-------------------------:|:---------------------:|:-----------------------:|
-| **outlook** | **0.247** | **0.116** | 0.071 |
-| humidity | 0.152 | 0.092 | 0.071 |
-| windy | 0.048 | 0.031 | 0.000 |
-| temperature | 0.029 | 0.019 | 0.000 |
-
-* Outlook is the root under all three criteria; the *error* gives **zero** gain to two useful questions (demo T1)
+* Weighted entropy after: $\tfrac{5}{14} \cdot 0.971 + \tfrac{4}{14} \cdot 0 + \tfrac{5}{14} \cdot 0.971 = 0.694$
+* Gain: $0.940 - 0.694 = 0.247$
+* Outlook is the root under all three criteria (demo T1)
+* The *error* gives zero gain to two useful questions
 
 ## Entropy or Gini?
 
-* In practice they choose the **same** question almost always: the two curves have the same shape
-* Entropy is slightly more sensitive to *small* classes; Gini is cheaper (no logarithm)
-* Breast cancer, best question: `worst_concave_points`, threshold 0.147 for both criteria (lab Part B)
-* Default in scikit-learn: Gini. C4.5 (Quinlan) uses a normalized entropy gain; CART (Breiman) uses Gini
-* **Misclassification error** is a bad *splitting* criterion (it is flat across useful splits) but is the right measure of the *final* tree
+* In practice they pick the **same** question almost always
+* Entropy is a little more sensitive to small classes; Gini is cheaper
+* Breast cancer: `worst_concave_points`, threshold 0.142 for both criteria
+* scikit-learn uses Gini; C4.5 [@quinlan1986] an entropy gain; Breiman's trees [@breiman1984] Gini
+* Error is a poor *splitting* criterion but the right measure of the *final* tree
 
 ## The Greedy Algorithm
 
@@ -208,293 +285,439 @@ $$\text{gain} = 0.940 - 0.694 = \mathbf{0.247}$$
 \end{center}
 ```
 
-* **Greedy:** each split is the best *now*, without looking ahead; the best *tree* is a hard (NP-complete) search
-* A very good question may come after a mediocre one (XOR!): greedy can miss it
-* The same algorithm works for classes and for numbers: only the impurity changes
+* **Greedy:** each split is the best *now*, without looking ahead
+* A very good question may come after a mediocre one (exclusive or)
+* The same algorithm serves classes and numbers: only the impurity changes
 
-## Numeric Features: Where to Cut?
+## How the Cost of an Algorithm Grows
 
-For a numeric feature the candidate questions are "$x \le t$", with $t$ the **midpoint between consecutive sorted values** (any other threshold gives the same partition). Six applicants, bad credit $= 1$:
+Why not build the best tree? Cost is the number of steps for an input of size $n$.
 
-| age | 22 | 25 | 31 | 38 | 45 | 52 |
-|:-------------|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
-| bad? | 1 | 1 | 0 | 1 | 0 | 0 |
+![](plots/06/t7_growth.pdf)
 
-| threshold | left (good, bad) | right (good, bad) | gain (Gini) |
-|:-----------------:|:--------------------------:|:---------------------------:|:--------------------:|
-| 23.5 | (0, 1) | (3, 2) | 0.100 |
-| **28.0** | (0, 2) | (3, 1) | **0.250** |
-| 34.5 | (1, 2) | (2, 1) | 0.056 |
-| **41.5** | (1, 3) | (2, 0) | **0.250** |
-| 48.5 | (2, 3) | (1, 0) | 0.100 |
+* $n$, $n \log n$, $n^2$ are **polynomial**; sorting is $n \log n$
+* At $10^9$ steps a second and $n = 50$: $2^n$ takes 13 days
+* $n!$ takes $10^{48}$ years; gridlines are $10^6$ apart
 
-## One Sorted Scan Finds the Best Cut
+<!-- defines: polynomial -->
 
-Sort the values once; walk along them keeping the **cumulative class counts** on the left; the right counts are the totals minus the left. The gain of every threshold is then a few operations.
+## P, NP, NP-Complete, NP-Hard
 
-* Cost: one sort, $O(n\log n)$, then a linear pass; for all $d$ features $O(d\,n\log n)$ per node
-* Without the cumulative counts, each of the $n-1$ thresholds would need a pass over the data: $O(n^2)$
-* The example above has **two thresholds tied** at 0.250 (28 and 41.5): the algorithm takes one of them; another implementation may take the other. This is why two correct trees can differ
-* Breast cancer, `worst_perimeter`: 513 candidate thresholds, the best at 106.0
-
-## Categorical Features and Missing Values
-
-* **Categorical feature:** a question "is the value in this subset?"; with one-hot columns ($d$ yes/no questions) the tree asks about one category at a time
-* A feature with **many categories** (a postcode) gives many ways to split: a high risk of fitting noise (see importances)
-* **Missing values:** CART uses *surrogate splits*; scikit-learn trees accept them natively since version 1.3; or impute (Class 03)
-* **Scaling is not needed:** a tree only compares a feature with a threshold; multiplying a feature by 1000 changes nothing
-* Monotone transformations (logarithm) change nothing either
-
-## When to Stop
-
-A tree grown until every leaf is pure has **100% accuracy on the training data** and has memorized the noise. Stopping rules:
-
-* The node is **pure** (one class): nothing to gain
-* **Maximum depth** reached (`max_depth`): at most that many questions
-* **Minimum leaf size** (`min_samples_leaf`): a leaf must have enough examples to be trusted
-* **Minimum gain** (`min_impurity_decrease`): the best question is not worth asking
-* These are *hyperparameters*: chosen on **validation data**, never on the training accuracy (Class 01)
-
-## Depth and Overfitting
-
-Breast cancer, accuracy against the maximum depth (training data, and 10-fold cross-validation):
+Problems are sorted by how their cost grows and by how easily an answer is checked.
 
 ```{=latex}
 \begin{center}
-\begin{tikzpicture}
-\begin{axis}[faa, height=4.2cm, width=0.7\textwidth, xmin=1, xmax=12, ymin=0.86, ymax=1.01, xlabel={\texttt{max\_depth}}, ylabel={accuracy}, legend pos=south east]
-  \addplot[cblue, mark=*, mark size=1.3pt] coordinates {(1,0.923) (2,0.942) (3,0.979) (4,0.982) (5,0.995) (6,0.998) (7,1.000) (8,1.000) (9,1.000) (10,1.000) (11,1.000) (12,1.000)}; \addlegendentry{training}
-  \addplot[cred, mark=square*, mark size=1.3pt] coordinates {(1,0.887) (2,0.910) (3,0.937) (4,0.942) (5,0.942) (6,0.937) (7,0.930) (8,0.923) (9,0.923) (10,0.923) (11,0.923) (12,0.923)}; \addlegendentry{validation}
-\end{axis}
+\begin{tikzpicture}[ell/.style={draw, thick, ellipse}, lab/.style={font=\scriptsize, align=center}]
+  \node[ell, minimum width=5.6cm, minimum height=2.8cm, fill=cblue!10] at (0,0) {};
+  \node[ell, minimum width=5.2cm, minimum height=2.8cm, fill=cred!12, fill opacity=0.6] at (3.2,0) {};
+  \node[ell, minimum width=2.4cm, minimum height=1.5cm, fill=cgreen!25] at (-1.5,-0.1) {};
+  \node[lab] at (-1.5,-0.1) {\textbf{P}\\ sorting,\\ shortest path};
+  \node[lab] at (1.7,0) {\textbf{NP-complete}\\ satisfiability};
+  \node[lab] at (4.35,0) {\textbf{NP-hard}\\ travelling salesman,\\ shortest tour};
+  \node[lab, anchor=south] at (-1.5,1.4) {\textbf{NP}};
+  \node[lab, anchor=south] at (4.3,1.4) {\textbf{NP-hard}};
 \end{tikzpicture}
 \end{center}
 ```
 
-* Training accuracy reaches 1.000 at depth 7; the validation accuracy peaks at **depth 4-5 (0.942)** and then falls to 0.923
+* **NP:** an answer is checked in polynomial time
+* **NP-complete:** the hardest of NP: one fast algorithm solves all
+* **NP-hard:** at least that hard, maybe outside NP
+* **P versus NP is unsolved**
+
+<!-- defines: NP-complete, NP-hard -->
+
+## Notation: Counting
+
+| symbol | meaning | example |
+|:-------------|:------------------------------------------|:-----------------------------------|
+| $S$ | candidate questions (feature, threshold) | $S \approx d\,(n-1)$ |
+| $u$ | levels of a tree | depth 2 |
+| $W_u$ | trees with up to $u$ levels | 1 020 101 for $S = 100$, $u = 2$ |
+| $W_{u+1}$ | trees with one more level | |
+| $v$ | levels of a category | 10 purposes |
+| $U$ | a subset of the levels | {own, rent} |
+| $Q$ | questions "value in $U$?" | 511 for $v = 10$ |
+
+## Counting the Trees: One Level More
+
+A tree is a leaf, or a question with two subtrees, each one level shorter.
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cgreen, text width=1.8cm] (a) {a leaf\\ 1 way};
+  \node[fillbox=cblue, text width=2.4cm, right=20mm of a, yshift=0.9cm] (q) {a question\\ $S$ ways};
+  \node[fillbox=corange, text width=2.4cm, below left=7mm and 1mm of q] (l) {left subtree\\ $W_u$ ways};
+  \node[fillbox=corange, text width=2.4cm, below right=7mm and 1mm of q] (r) {right subtree\\ $W_u$ ways};
+  \draw[flow] (q) -- (l); \draw[flow] (q) -- (r);
+  \node at ($(a.east)!0.5!(q.west)$) {or};
+\end{tikzpicture}
+\end{center}
+```
+
+<!-- derivation: count-trees -->
+$$
+\begin{aligned}
+W_{u+1} &= 1 + S\,W_u^{2} && \text{(definition of the number of trees)}
+\end{aligned}
+$$
+
+* One more level squares the count: a tower
+
+## The Number of Trees Explodes
+
+Trees with up to $u$ levels for $S$ questions, and the time of an exhaustive search:
+
+![](plots/06/t7_count.pdf)
+
+* Depth 2, $n = 320$: 2 billion trees, 3 s (typical)
+* Depth 3, $n = 40$: about 39 days
+
+## Greedy: A Good Tree at a Low Cost
+
+Finding the best tree is NP-complete [@hyafil1976]; greedy is cheap and usually close.
+
+![](plots/06/t7_error.pdf)
+
+* A rule, 200 sets: optimal on 76, within 2 errors on 180
+* **Exclusive or fails:** 9.54 errors against 4.44; test error 0.467
+* Greedy depth 2: 0.002 s (typical)
+
+## Numeric Features: Where to Cut?
+
+The candidate questions are "$x \le t$", with $t$ midway between consecutive sorted values.
+
+![](plots/06/t1_thresholds.pdf)
+
+* Six applicants, bad credit $= 1$: gain of each cut
+* Two cuts tie at 0.250 (28 and 41.5): either is a correct tree
+
+<!-- defines: numeric -->
+
+## One Sorted Scan Finds the Best Cut
+
+Sort once, then walk along the values with **cumulative class counts** on the left.
+
+* The right counts are the totals minus the left counts
+* Cost: one sort, $O(n\log n)$, then a linear pass per feature
+* Without cumulative counts each cut needs a pass: $O(n^2)$
+* A tie is broken by the implementation: two correct trees can differ
+* Breast cancer, `worst_perimeter`: 513 candidate cuts, the best at 106.0
+
+## Why the Type of a Column Matters
+
+The type of a column decides which questions a tree may ask and which distance neighbours may use.
+
+![](plots/06/t6_types.pdf)
+
+* **Numeric:** continuous (age) or discrete (dependents)
+* **Ordinal:** ordered, gaps unknown (years employed)
+* **Nominal:** no order (postcode); **binary**: two levels
+
+<!-- defines: ordinal, nominal -->
+
+## Encoding a Category as Numbers
+
+An **encoding** turns each level of a category into numbers. Example: the housing of one applicant.
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[b/.style={text width=6.6cm, font=\scriptsize, minimum height=0.55cm}]
+  \node[fillbox=cgray, text width=2.0cm, font=\scriptsize] (a) {\textbf{housing}\\ own, rent, for free};
+  \node[fillbox=cblue, b, right=11mm of a, yshift=1.05cm] (o) {\textbf{ordinal:} for free 0, own 1, rent 2 (an invented order)};
+  \node[fillbox=cgreen, b, below=2mm of o] (h) {\textbf{one-hot:} one indicator column per level (no order)};
+  \node[fillbox=corange, b, below=2mm of h] (f) {\textbf{frequency:} own 0.713, rent 0.179, for free 0.108};
+  \node[fillbox=cred, b, below=2mm of f] (t) {\textbf{target:} share of bad credit 0.261, 0.391, 0.407};
+  \draw[flow] (a.east) -- (o.west); \draw[flow] (a.east) -- (h.west); \draw[flow] (a.east) -- (f.west); \draw[flow] (a.east) -- (t.west);
+\end{tikzpicture}
+\end{center}
+```
+
+* A tree asks "$\le$ threshold": order matters, gaps do not
+* **Target** encoding uses the class: fit it inside each training fold
+
+<!-- defines: encoding, one-hot -->
+
+## A Tree Asks: Is the Value in a Subset?
+
+A question on a category with $v$ levels asks "is the value in $U$?". Example: $v = 3$.
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize, b/.style={draw, rounded corners=2pt, minimum height=5mm, inner sep=3pt, text width=2.4cm, align=center}]
+  \node[font=\scriptsize\bfseries] at (0,1.0) {$U$}; \node[font=\scriptsize\bfseries] at (3.0,1.0) {not $U$};
+  \node[b, fill=cblue!15] at (0,0.5) {own}; \node[b] at (3.0,0.5) {rent, for free};
+  \node[b, fill=cblue!15] at (0,0) {rent}; \node[b] at (3.0,0) {own, for free};
+  \node[b, fill=cblue!15] at (0,-0.5) {for free}; \node[b] at (3.0,-0.5) {own, rent};
+\end{tikzpicture}
+\end{center}
+```
+
+<!-- derivation: subset-questions -->
+$$
+\begin{aligned}
+Q &= \frac{2^{v} - 2}{2} && \text{(definition of the number of questions)} \\
+  &= 2^{v-1} - 1 && \text{(simplify)}
+\end{aligned}
+$$
+
+* $2^v$ subsets, less empty and full, halved
+
+## Many Levels, Many Questions
+
+The number of questions doubles with each level.
+
+![](plots/06/t6_splits.pdf)
+
+* Sorted by class share: $v - 1$ cuts, same best gain [@breiman1984]
+* Purpose, $v = 10$: 511 or 9 questions, gain 0.012
+
+## KNN Needs a Distance Between Categories
+
+Neighbours add up differences, so a category needs a distance. German credit, checking account:
+
+![](plots/06/t6_distances.pdf)
+
+* Ordinal codes invent distances: "$<0$" is 3 from "none"
+* One-hot: every pair is $\sqrt{2}$ apart (**Hamming**)
+* **Gower:** mean of per-column differences; two applicants: 0.468
+
+<!-- defines: Hamming, Gower -->
+
+## Does the Encoding Change the Accuracy?
+
+Five encodings, a tree and neighbours, four data sets: dots are means, bars the spread.
+
+![](plots/06/t6_accuracy.pdf)
+
+* German credit tree: 0.693 to 0.705, spread 0.02 to 0.04
+* Neighbours: natural order 0.741, alphabetical 0.718
+
+## Many Levels and Missing Values
+
+Left: a random postcode with $v$ levels added to German credit. Right: values removed from wine; impute or flag.
+
+![](plots/06/t6_card_missing.pdf)
+
+* Scaled one-hot: neighbours 0.684 at $v = 50$ (unscaled 0.731)
+* Wine, 40% missing: tree 0.651, neighbours 0.682
+
+## When to Stop
+
+A tree grown until every leaf is pure has **100% training accuracy** and fits the noise. Stopping rules:
+
+* The node is **pure**: nothing to gain
+* **Maximum depth** reached (`max_depth`)
+* **Examples per leaf** (`min_samples_leaf`): enough to trust a leaf
+* **Minimum gain** (`min_impurity_decrease`): the question is not worth asking
+* These are *hyperparameters*: choose them on **validation data** (Class 01)
+
+## Depth and Overfitting
+
+Breast cancer, accuracy against the maximum depth: training data, and 10-fold cross-validation.
+
+![](plots/06/t3_depth.pdf)
+
+* Training accuracy reaches 1.000 at depth 7
+* Validation peaks at **depth 4-5 (0.942)**, then falls to 0.923
 
 ## Depth Depends on the Data
 
-Best depth by 10-fold cross-validation, and the accuracy of an unlimited tree (depth 15):
+Best depth by 10-fold cross-validation, and an unlimited tree (depth 15):
 
 | data set | best depth | CV accuracy at best | train, depth 15 | CV, depth 15 |
-|:------------------|:--------------:|:-----------------------:|:-------------------:|:----------------:|
+|:----------------------------|:----------:|:----------------:|:---------------:|:-------------:|
 | breast cancer | 5 | 0.942 | 1.000 | 0.923 |
 | German credit | 3 | 0.717 | 1.000 | 0.685 |
 | wine ($\ge 6$) | 15 | 0.780 | 0.978 | 0.780 |
 
-* A small, noisy set (German credit) wants a **shallow** tree; a large set with a real structure (6 497 wines) can use all its depth
-* The gap training $-$ validation is the symptom: 0.315 for German credit at depth 15
+* Small, messy data want a **shallow** tree; large, clean data use depth
+* The gap training $-$ validation is the symptom: 0.315 for German credit
 
 ## Pre-Pruning: the Leaf Size
 
-`min_samples_leaf`: a leaf with fewer examples is not allowed. 10-fold CV accuracy:
+`min_samples_leaf`: a leaf with fewer examples is not allowed. Cross-validated accuracy:
 
-| data set | criterion | leaf $\ge 1$ | $\ge 5$ | $\ge 20$ | $\ge 50$ |
-|:--------------------|:--------------|:------------------:|:------------:|:-------------:|:-------------:|
-| breast cancer | Gini | 0.923 | 0.933 | 0.917 | 0.886 |
-| | entropy | 0.931 | **0.942** | 0.931 | 0.875 |
-| German credit | Gini | 0.679 | 0.704 | 0.711 | **0.713** |
-| | entropy | 0.703 | 0.687 | 0.713 | **0.724** |
-| wine ($\ge 6$) | entropy | **0.794** | 0.761 | 0.750 | 0.743 |
+![](plots/06/t3_leaf.pdf)
 
-* The right size depends on the data; noisy data want large leaves; the criterion matters little
+* The best value depends on the data
+* The criterion matters little
+
+## Notation: Pruning and Regression
+
+| symbol | meaning | used in |
+|:----------------------|:----------------------------------------------------|:----------------|
+| $\lambda$ | price of one leaf | pruning |
+| $\lvert T\rvert$ | number of leaves of the tree $T$ | pruning |
+| $E_T$ | training error of the tree $T$ | pruning |
+| $C_\lambda$ | cost of $T$: error plus the price of its leaves | pruning |
+| $R$ | a leaf of a regression tree (a cell) | regression |
+| $y_i$ | targets: target of example $i$, not its prediction | regression |
+| $i$ | index of an example | regression |
+| $\bar{y}_R$ | mean of the targets in $R$ | regression |
+| $E_R$ | squared errors of the targets around $\bar{y}_R$ | regression |
 
 ## Post-Pruning: Cost-Complexity
 
-Grow the full tree, then cut back. Penalize the **number of leaves** $|T|$ as ridge penalizes the weights (Class 03):
+Grow the full tree, then cut back with a price per leaf, as ridge prices weights.
 
-$$R_\alpha(T) = \underbrace{\text{error}(T)}_{\text{on the training data}} + \alpha\,|T|$$
+<!-- derivation: cost-complexity -->
+$$
+\begin{aligned}
+C_\lambda &= E_T + \lambda\,\lvert T\rvert && \text{(definition of the penalized error)}
+\end{aligned}
+$$
 
-* $\alpha = 0$: the full tree; a larger $\alpha$ removes the branch that pays *least* per leaf, then the next: a nested **path** of trees from one fit
-* German credit, 700 training examples, validation accuracy along the path:
+![](plots/06/t3_pruning.pdf)
 
-| leaves | 142 (full) | 96 | 63 | 41 | **28** | 16 | 8 |
-|:----------------------|:-------------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|
-| train accuracy | 1.000 | 0.954 | 0.909 | 0.874 | 0.836 | 0.787 | 0.763 |
-| validation accuracy | 0.700 | 0.727 | 0.727 | 0.727 | **0.753** | 0.743 | 0.690 |
-
-* Too much pruning also hurts (8 leaves: 0.690): the best tree is a *compromise*, 5 times smaller than the full one
+* A larger $\lambda$ prunes the cheapest branch first
 
 ## Regression Trees
 
-For a **number** the tree is the same: the leaf predicts the **mean** of its examples, and a question is judged by how much it reduces the **variance** (the sum of squared errors, SSE, around the mean):
+A leaf predicts the **mean**; questions are judged by squared error removed.
 
-$$\text{SSE}(S) = \sum_{i\in S}(y_i - \bar y_S)^2$$
+<!-- derivation: sse -->
+$$
+\begin{aligned}
+E_R &= \sum_{i \in R}(y_i - \bar{y}_R)^2 && \text{(definition of the squared error of a leaf)}
+\end{aligned}
+$$
 
-$$\text{gain} = \text{SSE}(\text{parent}) - \text{SSE}(\text{left}) - \text{SSE}(\text{right})$$
+![](plots/06/t4_sse.pdf)
 
-* The tree is grown exactly as before: all features, all thresholds, the largest gain, recurse
 
 ## A Regression Split by Hand
 
-Five points $(x,y)$: $(1,1.0), (2,1.2), (3,3.1), (4,3.0), (5,3.2)$; without a split the mean is 2.30 and the SSE 4.84.
+Five points: without a split, the mean is 2.30 and the squared error 4.84.
 
-| threshold | left mean | right mean | total SSE |
-|:----------------------:|:----------------------:|:------------------------:|:----------------------:|
-| 1.5 | 1.00 | 2.63 | 2.728 |
-| **2.5** | 1.10 | 3.10 | **0.040** |
-| 3.5 | 1.77 | 3.10 | 2.707 |
-| 4.5 | 2.08 | 3.20 | 3.828 |
+![](plots/06/t4_thresholds.pdf)
+
+* The cut at 2.5 gives means 1.10 and 3.10
+* Gain: parent minus children, $4.84 - 0.040 = 4.80$
 
 ## The Prediction Is a Staircase
 
-```{=latex}
-\begin{center}
-\begin{tikzpicture}
-\begin{axis}[faa, height=4cm, width=0.72\textwidth, xmin=-0.5, xmax=6.5, ymin=-1.8, ymax=1.5, xlabel={$x$}, ylabel={$y$}]
-  \addplot[only marks, mark=*, cblue, mark size=1.4pt] coordinates {(0.02,0.03) (0.17,0.22) (0.25,0.15) (0.35,0.02) (0.54,0.66) (0.75,0.49) (0.90,0.71) (1.19,0.82) (1.36,1.04) (1.44,1.03) (1.79,0.64) (1.86,1.08) (2.02,0.86) (2.15,1.06) (2.30,0.57) (2.35,0.15) (2.54,0.42) (2.64,0.46) (2.76,0.55) (3.00,0.50) (3.25,0.10) (3.43,-0.09) (3.57,-0.39) (3.69,-0.56) (3.74,-0.92) (3.82,-0.77) (3.90,-0.95) (4.03,-0.69) (4.13,-0.84) (4.38,-0.59) (4.72,-1.59) (4.88,-0.90) (5.00,-0.87) (5.18,-0.81) (5.34,-1.29) (5.48,-0.92) (5.60,-0.70) (5.65,-0.80) (5.73,-0.53) (5.97,-0.23)};
-  \addplot[cred, no marks, thick] coordinates {(-0.50,0.28) (0.20,0.28) (0.20,0.06) (0.44,0.06) (0.44,0.85) (2.36,0.85) (2.36,0.36) (3.36,0.36) (3.36,-0.10) (3.53,-0.10) (3.53,-0.39) (3.62,-0.39) (3.62,-0.78) (5.94,-0.78) (5.94,-0.28) (6.50,-0.28)};
-  \addplot[black, dotted, no marks, domain=-0.5:6.5, samples=60] {sin(deg(x))};
-\end{axis}
-\end{tikzpicture}
-\end{center}
-```
+A tree of depth 3 on a noisy sine curve:
 
-* Depth 3: **8 leaves**, 8 different values; outside $[0, 6]$ the tree repeats its first or last value
+![](plots/06/t4_staircase.pdf)
+
+* Depth 3: **8 leaves**, 8 different values
+* Outside the data the tree repeats its first or last value
 
 ## A Tree Cannot Extrapolate
 
-Train California housing on the 70% of districts with the lowest median income; test on the **richest 30%**, never seen:
+Train California housing on the 70% of districts with the lowest income; test on the **richest 30%**.
 
-| model | RMSE, seen range | RMSE, richest 30% |
-|:----------------------------------|:---------------------------:|:-----------------------------:|
-| mean | 0.888 | 1.780 |
-| linear regression | 0.637 | **0.755** |
-| tree, depth 6 | 0.610 | 1.464 |
-| tree, leaves $\ge 20$ | 0.466 | 1.211 |
+![](plots/06/t4_extrap.pdf)
 
-* Inside the data the tree is better than the line (0.466 vs 0.637); outside it is **much worse** (1.21 vs 0.76): it predicts a constant, the line continues the trend
-* Same for KNN (next section): both **interpolate**; only models with a global form extrapolate
+* Inside the data the tree beats the line: 0.466 against 0.637
+* Outside it is **much worse**: 1.211 against 0.755
+* A tree predicts a constant; the line continues the trend
 
 ## Regression Trees on Real Data
 
-5-fold RMSE (concrete in MPa, abalone in rings, auto-mpg, California in 100 000 USD):
+5-fold root mean squared error (concrete in MPa, abalone in rings, California in 100 000 dollars):
 
 | data set | mean | linear | tree $d=3$ | tree $d=6$ | tree $d=12$ | leaf $\ge 10$ |
-|:--------------|:---------:|:---------:|:--------------:|:--------------:|:---------------:|:----------------:|
+|:----------------------|:-------:|:-------:|:-----------:|:-----------:|:------------:|:------------:|
 | concrete | 16.70 | 10.43 | 10.55 | 7.71 | **6.75** | 7.21 |
 | abalone | 3.22 | **2.21** | 2.50 | 2.35 | 2.80 | 2.39 |
 | auto-mpg | 7.79 | 3.39 | 3.58 | 3.65 | 3.83 | **3.18** |
 | California | 1.15 | 0.67 | 0.80 | 0.71 | 0.73 | **0.65** |
 
-* Concrete: strong **interactions** (cement with age): the tree wins by a wide margin; abalone is nearly linear: the line wins
-* Depth 12 is the best on concrete and the worst on abalone: **choose on validation data**
+* Concrete has strong **interactions**: the tree wins by a wide margin
+* Depth 12 is best on concrete and worst on abalone: **validate**
 
-## Strengths and Weaknesses
+## Summary: Strengths and Weaknesses of Trees
 
 | strengths | weaknesses |
-|:----------------------------------------------|:--------------------------------------------|
-| readable rules, easy to explain | high **variance**: small data change, other tree |
-| no scaling, no encoding of order | axis-parallel boundaries: diagonals are staircases |
+|:------------------------------------------|:------------------------------------------------|
+| readable rules, easy to explain | high **variance**: other data, other tree |
+| no scaling, no order to encode | axis-parallel borders: diagonals are staircases |
 | numeric and categorical features | cannot extrapolate (regression) |
 | captures interactions and non-linearity | greedy: not the best tree |
-| fast to train and to predict ($\le$ depth questions) | biased importances (next slide) |
+| fast to train and to predict | biased importances |
 
-* The weakness that matters most is the **variance**: the topic of the next class (ensembles: *bagging*, *random forests*, *boosting*)
+* The weakness that matters most is the **variance**: next class, ensembles
 
 ## Instability
 
-Breast cancer; 30 trees, each trained on a **bootstrap sample** (draw $n$ cases *with* replacement):
+Breast cancer: 30 trees, each grown on a **bootstrap sample** ($n$ cases drawn *with* replacement).
 
-| feature at the root | worst perimeter | worst concave points | worst radius | worst area | mean concave points |
-|:-------------------|:--------------:|:-----------------:|:------------:|:----------:|:-----------------:|
-| number of trees (of 30) | 19 | 6 | 2 | 2 | 1 |
+![](plots/06/t5_root.pdf)
 
-* The test accuracy of the 30 trees: mean 0.915, **sd 0.017**, from 0.871 to 0.947; between 6 and 18 leaves
-* The *majority vote* of the 30 trees: 0.918 — a first look at the idea of **bagging**
-* Moral: a single tree is a fragile object; do not read too much into *the* first split
+* Test accuracy of the 30 trees: 0.871 to 0.947; 6 to 18 leaves
+* The *majority vote*: 0.918, a first look at **bagging**
+* Do not read too much into *the* first split
 
 ## Feature Importances and Their Bias
 
-The *impurity importance* of a feature is the total gain of its splits. But it is **biased**: wine data plus one column of *pure noise*:
+Impurity importance: the total gain of a feature's splits. Wine plus a random column:
 
-| feature | impurity importance (train) | permutation importance (test) |
-|:----------------------------|:------------------------------:|:--------------------------------:|
-| alcohol | 0.261 | 0.127 |
-| volatile acidity | 0.152 | 0.077 |
-| sulphates | 0.091 | 0.036 |
-| **random continuous column** | **0.056** | **$-0.001$** |
-| random binary column | 0.003 | 0.001 |
+![](plots/06/t5_importances.pdf)
 
-* The noise column gets 5.6% (many thresholds, many chances to fit noise); **permutation importance** (shuffle one column on held-out data) sees through it
-* Two copies of a feature **split** the credit: 0.261 becomes $0.027 + 0.234$
+* The random column gets 5.6% of the importance
+* **Permutation importance** sees through it
+* Copies **split** the credit: 0.261 becomes $0.027 + 0.234$
 
-## DEMO T1--T3: Notebook
+## DEMO T1--T7: Notebook
 
-```{=latex}
-\begin{center}
-\vspace{8mm}
-{\Huge\bfseries DEMO T1--T3:}\\[5mm]
-{\LARGE\ttfamily 01\_decision\_trees.ipynb}
-\end{center}
-```
+`01_decision_trees.ipynb` (B1, T1 to T7) **shows** regions, gain, pruning, encodings, counting
 
-## DEMO T4--T5: Notebook
-
-```{=latex}
-\begin{center}
-\vspace{8mm}
-{\Huge\bfseries DEMO T4--T5:}\\[5mm]
-{\LARGE\ttfamily 01\_decision\_trees.ipynb}
-\end{center}
-```
+**Look for:** where each model fails, and how results move
 
 # k-Nearest Neighbours
 
 ## Learning by Analogy
 
-How does a doctor, or a real-estate agent, estimate? "Cases like this one were ...". KNN does exactly that.
+How does a doctor, or a real-estate agent, estimate? "Cases like this one were ...". Nearest neighbours do exactly that.
 
-* **No training:** the "model" is the stored data set; learning is *lazy*
-* To predict a new case: find the $k$ **most similar** stored cases and combine their answers: a **vote** for a class, the **mean** for a number
-* Two choices define the learner: the **distance** (what is "similar") and **$k$** (how many)
-* Very old idea (Fix and Hodges, 1951; Cover and Hart, 1967); still a strong baseline
-* An *analogizer* in the five classes of learners of Project 1 (with the SVM of Class 05)
+* **No training:** the "model" is the stored data; learning is *lazy*
+* To predict, find the $k$ **most similar** cases: they **vote** (class) or **average** (number)
+* The **distance** (what is similar) and **$k$** (how many) define the learner
+* A very old idea [@cover1967]; still a strong baseline
+* The *analogizer* of Project 1, with the support vector machine of Class 05
 
 ## The Algorithm in Four Steps
 
 1. **Standardize** the features (training statistics only; Class 03)
-2. **Distance:** compute the distance of the new case to every training case
+2. **Distance:** from the new case to every training case
 3. **Neighbours:** keep the $k$ smallest distances
-4. **Combine:** majority vote of their classes (or the mean of their targets)
+4. **Combine:** majority vote, or the mean of the targets
 
-* Nothing is fitted; all the cost is paid **at prediction time**: $O(n\,d)$ per case
-* The decision boundary is never written down; it is *implied* by the data
-* $k = 1$: the prediction is the class of the single nearest case
+* Nothing is fitted: all the cost is paid **at prediction time**, $O(n\,d)$ per case
+* The decision boundary is never written down: the data imply it
 
 ## Worked Example: Six Cases, One Query
 
-Query $q = (2.6, 1.2)$; the data and their distances $\sqrt{(x_1 - 2.6)^2 + (x_2 - 1.2)^2}$:
+Query $q = (2.6, 1.2)$, six cases A to F with classes 0 and 1:
 
-| case | position | class | distance to $q$ | rank |
-|:--------------:|:------------------:|:--------------:|:-----------------------------:|:--------------:|
-| C | $(3, 1)$ | 1 | 0.447 | 1 |
-| A | $(1, 1)$ | 0 | 1.612 | 2 |
-| D | $(3, 3)$ | 1 | 1.844 | 3 |
-| B | $(1, 3)$ | 0 | 2.408 | 4 |
-| F | $(6, 4)$ | 0 | 4.405 | 5 |
-| E | $(5, 5)$ | 1 | 4.494 | 6 |
-
-* $k = 1$: C $\to$ class **1**. $\ k = 3$: C, A, D: votes $1:2$, $0:1$ $\to$ class **1**
-* $k = 5$: C, A, D, B, F: votes $1:2$, $0:3$ $\to$ class **0**: the answer **changed** with $k$
+:::: {.columns}
+::: {.column width="48%"}
+![](plots/06/k1_six.pdf)
+:::
+::: {.column width="52%"}
+* $k = 1$: C $\to$ class **1**
+* $k = 3$: C, A, D $\to$ votes 2 to 1: class **1**
+* $k = 5$: C, A, D, B, F $\to$ votes 2 to 3: class **0**
+* The answer **changed** with $k$
+:::
+::::
 
 ## Distances
 
-For two cases $a = (1, 2)$ and $b = (4, 6)$:
+For two cases $a = (1, 2)$ and $b = (4, 6)$, the shape of "equally far" depends on the distance:
 
-| distance | formula | value |
-|:-----------|:--------------------------------------------|:----------------------------------:|
-| Euclidean | $\sqrt{\sum_j (a_j - b_j)^2}$ | $\sqrt{9 + 16} = 5$ |
-| Manhattan | $\sum_j \lvert a_j - b_j\rvert$ | $3 + 4 = 7$ |
-| Chebyshev | $\max_j \lvert a_j - b_j\rvert$ | $4$ |
-| cosine | $1 - \dfrac{a^\top b}{\lVert a\rVert\,\lVert b\rVert}$ | $1 - \dfrac{16}{2.24\cdot7.21} = 0.008$ |
-| Hamming | number of differing coordinates | $2$ |
+![](plots/06/k1_distances.pdf)
 
-* Euclidean is the default; Manhattan is less sensitive to one large difference; cosine ignores the *length* (text); Hamming for categories
+* Euclidean 5, Manhattan 7, Chebyshev 4, Hamming 2 (differing coordinates)
+* Cosine: $1 - \tfrac{16}{2.24 \cdot 7.21} = 0.008$, the angle, not the length
+* Euclidean is the default; cosine suits text; Hamming suits categories
 
 ## Which Distance? (Demo K1)
 
-Test accuracy of KNN, $k = 5$, standardized features:
+Test accuracy of $k = 5$ neighbours, standardized features:
 
 | data set | Euclidean | Manhattan | Chebyshev | cosine |
 |:-----------------------|:------------------:|:------------------:|:------------------:|:-------------:|
@@ -503,17 +726,17 @@ Test accuracy of KNN, $k = 5$, standardized features:
 | spam | 0.932 | **0.938** | 0.912 | 0.933 |
 | heart disease | 0.803 | 0.803 | 0.750 | **0.829** |
 
-* No distance wins everywhere; differences of 1-3 points are within the noise of one split
-* The distance is a **modelling decision**: it says what "similar" means for *your* problem
+* No distance wins everywhere; 1 to 3 points are chance
+* The distance is a **modelling decision**: it says what "similar" means
 
 ## Why Scaling Is Essential
 
-Two patients: $a$ = (age 30, income 30 000), $b$ = (age 40, income 30 500). They differ by 10 years and by 500 euros.
+Two patients: $a$ = (age 30, income 30 000), $b$ = (age 40, income 30 500).
 
-* Raw squared distance: $10^2 + 500^2 = 100 + 250\,000$: the **income decides**, the age counts $0.04\%$
-* Standardized (sd of age 10, of income 10 000): $1^2 + 0.05^2 = 1.0025$: now the **age decides**
-* Neither is "right": scaling gives each feature the **same chance**, which is a statement about the problem
-* The rule of Class 03: statistics from the **training** part only
+* Raw squared distance: $10^2 + 500^2$: the **income decides**, age counts 0.04%
+* Standardized (sd 10 years, 10 000 euros): $1^2 + 0.05^2 = 1.0025$: **age decides**
+* Neither is "right": scaling gives each feature the **same chance**
+* Rule of Class 03: statistics from the **training** part only
 
 ## Scaling in Numbers (Demo K2)
 
@@ -528,62 +751,51 @@ Test accuracy, $k = 5$, raw against standardized features:
 | digits | **0.980** | 0.973 | 16 |
 | spam (log1p) | 0.929 | 0.932 | 8 |
 
-* The more different the ranges, the more standardization matters: up to **18 points** (heart disease)
-* The digits are 64 pixels on the **same** scale: nothing to fix (and standardizing slightly hurts, as it amplifies rare pixels)
+* The wider the ranges, the more standardization matters: up to **18 points**
+* Digits: 64 pixels on the **same** scale; standardizing slightly hurts
 
 ## Choosing $k$: the Bias-Variance Knob
 
-* **$k = 1$:** the boundary follows every single case, including the mislabelled ones: low bias, **high variance**, zero training error
-* **$k = n$:** every prediction is the majority class: high bias
-* In between: a smooth boundary; the best $k$ depends on the noise and is chosen on **validation data**
-* Rule of thumb: start with $k \approx \sqrt n$, use an odd $k$ for two classes (no ties), search on a grid
+Two moons, 300 training cases: the border for $k = 1, 15, 201$.
 
-| two moons (300 train) | $k=1$ | 5 | 15 | 51 | 201 |
-|:------------------------------|:------------:|:------------:|:------------:|:------------:|:------------:|
-| training accuracy | 1.000 | 0.943 | 0.940 | 0.940 | 0.757 |
-| test accuracy | 0.876 | 0.903 | 0.914 | **0.918** | 0.788 |
+![](plots/06/k2_regions.pdf)
+
+* **$k = 1$:** follows every case, noise included: zero training error
+* **Large $k$:** a smooth border, then the majority class
+* Rule of thumb: $k \approx \sqrt n$, odd for two classes, chosen on validation data
 
 ## The Curve of $k$
 
-```{=latex}
-\begin{center}
-\begin{tikzpicture}
-\begin{semilogxaxis}[faa, height=4cm, width=0.7\textwidth, xmin=0.8, xmax=250, ymin=0.7, ymax=1.02, xlabel={$k$ (log)}, ylabel={accuracy}, legend pos=south west]
-  \addplot[cblue, mark=*, mark size=1.5pt] coordinates {(1,1.000) (5,0.943) (15,0.940) (51,0.940) (201,0.757)}; \addlegendentry{train}
-  \addplot[cred, mark=square*, mark size=1.5pt] coordinates {(1,0.876) (5,0.903) (15,0.914) (51,0.918) (201,0.788)}; \addlegendentry{test}
-\end{semilogxaxis}
-\end{tikzpicture}
-\end{center}
-```
+Accuracy on the two moons against $k$, training and test:
 
-* Best $k$ by 5-fold CV: **11** (breast cancer, 0.967), **5** (digits, 0.977), **9** (German credit, 0.735)
-* German credit: $k = 1$ gives 0.677 and $k = 59$ gives 0.710 — both worse than $k = 9$; breast cancer and digits drop a little with a large $k$
+![](plots/06/k2_curve.pdf)
+
+* Best $k$ by cross-validation: **11** (breast cancer 0.967), **5** (digits 0.977), **9** (German 0.735)
+* German credit: $k = 1$ gives 0.677, $k = 59$ gives 0.710
 
 ## Weighted Voting
 
-Instead of one vote per neighbour, let a neighbour vote with weight $w_i = 1 / d_i$: the near ones count more.
+Let each neighbour vote with weight $w_i = 1 / d_i$: near ones count more.
 
-* Example from the six cases, $k = 5$: weights $1/0.447 = 2.24$ (C, class 1), $0.62$ (A, 0), $0.54$ (D, 1), $0.42$ (B, 0), $0.23$ (F, 0)
-* Class 1: $2.24 + 0.54 = 2.78$; class 0: $0.62 + 0.42 + 0.23 = 1.26$ $\to$ class **1** (the plain vote gave 0)
-* It makes ties rare and the result less sensitive to $k$: spam, CV accuracy for $k = 3, 15, 45$
+![](plots/06/k2_weighted.pdf)
 
-| spam | $k=3$ | $k=15$ | $k=45$ |
-|:--------------------------------------|:-----------------:|:-----------------:|:-----------------:|
-| uniform | 0.927 | 0.926 | 0.917 |
-| distance-weighted | 0.936 | 0.939 | **0.937** |
+* Six cases, $k = 5$: weights 2.24 (C), 0.62 (A), 0.54 (D), 0.42 (B), 0.23 (F)
+* Class 1: $2.24 + 0.54 = 2.78$; class 0: 1.26; so class **1**
+* Ties become rare; the result depends less on $k$
 
 ## KNN for Regression
 
-The prediction is the **mean** of the targets of the $k$ nearest cases (or the distance-weighted mean): a *local average*.
+The prediction is the **mean** of the $k$ nearest targets (or the distance-weighted mean): a *local average*.
 
-* A noisy sinusoid, 80 points; error to the *true* curve inside the data: $k=1$: 0.254, $k=3$: 0.158, **$k=10$: 0.109**, $k=40$: 0.278
-* $k = 1$ passes through every point (training RMSE 0); $k = 40$ flattens the peaks
-* Like a tree: **no extrapolation**; the prediction outside the data is the value of the nearest border
-* Unlike a tree: the prediction is *smooth in the data*, with no axis-parallel steps
+* A noisy sine, 80 points; error to the *true* curve:
+* $k=1$: 0.254; $k=3$: 0.158; **$k=10$: 0.109**; $k=40$: 0.278
+* $k = 1$ passes through every point; $k = 40$ flattens the peaks
+* Like a tree: **no extrapolation**
+* Unlike a tree: smooth, with no axis-parallel steps
 
 ## KNN Regression in Numbers (Demo K4)
 
-5-fold RMSE, standardized features:
+5-fold root mean squared error, standardized features:
 
 | data set | mean | linear | $k=1$ | $k=5$ | $k=15$ | $k=15$ weighted |
 |:----------------|:-----------:|:-----------:|:-----------:|:-----------:|:-----------:|:---------------------:|
@@ -592,52 +804,87 @@ The prediction is the **mean** of the targets of the $k$ nearest cases (or the d
 | auto-mpg | 7.79 | 3.39 | 3.41 | 3.09 | 3.16 | **3.03** |
 | California | 1.15 | 0.67 | 0.81 | 0.64 | 0.62 | **0.62** |
 
-* On concrete and California a local model beats the line (they are non-linear); on abalone (nearly linear, noisy) the line is as good
-* $k = 1$ is never the best: it copies the noise
+* On concrete and California a local model beats the line
+* On abalone (nearly linear, noisy) the line is as good; $k = 1$ is never best
 
-## The Curse of Dimensionality
+## The Curse of Dimensionality (Demo K3)
 
-In high dimension *everything is far from everything*. 500 random points in the unit cube $[0,1]^d$ and one query:
+In high dimension *everything is far from everything*: 500 random points, one query.
 
-| $d$ | 1 | 2 | 10 | 50 | 100 | 1 000 |
-|:------------------------------------|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|
-| nearest / farthest distance | 0.002 | 0.012 | 0.31 | 0.63 | 0.74 | **0.90** |
-| edge of the cube holding 1% of the data | 0.01 | 0.10 | 0.63 | 0.91 | 0.95 | 0.995 |
+![](plots/06/k3_curse.pdf)
 
-* At $d = 1000$ the nearest point is only 10% closer than the farthest: "nearest" has lost its meaning
-* To capture 1% of the data in $d = 100$ you need a cube of edge **0.95**: a "neighbourhood" is nearly the whole space (Class 01)
+* At $d = 1000$ the nearest point is only 10% closer than the farthest
+* To hold 1% of the data at $d = 100$: edge **0.95**
 
 ## Irrelevant Features
 
-Add $r$ columns of **pure noise** to the breast-cancer data (standardized). Test accuracy:
+Add $r$ **random** columns to the breast-cancer data. Test accuracy:
 
-| noise columns $r$ | 0 | 10 | 100 | 300 | 1 000 |
-|:-----------------------------|:------------:|:------------:|:------------:|:------------:|:------------:|
-| KNN, $k=5$ | 0.947 | 0.918 | 0.877 | 0.889 | **0.836** |
-| logistic regression | 0.959 | 0.953 | 0.942 | 0.918 | 0.895 |
-| SVM (RBF) | 0.953 | 0.953 | 0.942 | 0.930 | 0.871 |
-| decision tree | 0.912 | 0.930 | 0.906 | 0.901 | 0.906 |
-| naive Bayes | 0.912 | 0.912 | 0.912 | 0.912 | 0.924 |
+![](plots/06/k3_noise.pdf)
 
-* KNN counts every column in the distance, so it degrades fastest; a **tree** ignores a column that never gives a gain; naive Bayes treats columns independently
-* Remedy: select or weight features *before* KNN (the filter, wrapper, and embedded methods of feature selection)
+* Neighbours count every column: they degrade fastest
+* A **tree** ignores a column that never gives a gain
+* Remedy: select features *before* neighbours
 
 ## The Cost of Prediction
 
-Seconds to predict 500 queries, $k = 5$:
+Seconds to predict 500 queries, $k = 5$, by search method:
 
-| training cases $n$ | dimension $d$ | brute force | kd-tree | ball tree |
-|:-------------------------:|:--------------------:|:-----------------:|:------------:|:---------------:|
-| 2 000 | 2 | 0.004 | 0.003 | 0.011 |
-| 20 000 | 2 | 0.030 | **0.004** | 0.012 |
-| 20 000 | 10 | **0.042** | 0.145 | 0.205 |
-| 20 000 | 30 | **0.040** | 0.519 | 0.319 |
-| 20 000 | 100 | **0.025** | 2.118 | 1.707 |
+![](plots/06/k5_cost.pdf)
 
-* A **kd-tree** (a tree of coordinate cuts of the *data*) prunes most of the distances in low dimension; beyond $d \approx 10$ it is *slower* than brute force (the curse again)
-* Memory: the whole data set; $10^6$ cases $\times$ 100 features in float64 = 0.8 GB, kept for every prediction
+* A **kd-tree** prunes distances in low dimension; beyond $d \approx 10$ brute force wins
+* Memory: $10^6$ cases $\times$ 100 features = 0.8 gigabytes
 
-## Strengths and Weaknesses
+## Prune the Data: Keep the Cases That Matter
+
+Many stored cases never change a prediction: the ones near the class border define it. Two moons, 300 cases:
+
+![](plots/06/k6_condense.pdf)
+
+* **Condensed** [@hart1968]: keep a case the kept ones misclassify
+* 57 of 300 kept: test error 0.114, with all cases 0.091
+* **Edited** [@wilson1972]: delete cases their neighbours outvote
+
+<!-- defines: prototype selection -->
+
+## Pruning in Numbers
+
+Digits, one neighbour, brute force; random subsets of the same size are the baseline.
+
+![](plots/06/k6_prune.pdf)
+
+* Hart keeps 0.134: accuracy 0.944 against 0.967, 5 times faster
+* Noisy wine keeps 0.433: 0.759 against 0.795
+
+## Approximate Nearest Neighbours
+
+**Approximate** search gives up the exact answer for speed. **Recall@10** is the share of the true 10 neighbours found.
+
+![](plots/06/k6_ann.pdf)
+
+* 200 000 vectors, $d = 64$: exact, 600 queries/s
+* Cell index, 16 of 512 cells: recall 0.873, 20 times faster
+* Graph index: 0.918, 10 times faster
+
+<!-- defines: ANN, recall -->
+
+## How ANN Indexes Skip Distances
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[b/.style={text width=3.2cm, font=\scriptsize, minimum height=1.6cm}]
+  \node[fillbox=cgreen, b] (i) {\textbf{IVF}\\ cluster the data into cells; search only the cells nearest to the query};
+  \node[fillbox=cblue, b, right=4mm of i] (h) {\textbf{HNSW}\\ a graph of neighbours in layers; walk it towards the query};
+  \node[fillbox=corange, b, right=4mm of h] (p) {\textbf{PQ}\\ compress each vector to a few bytes; compare the codes};
+\end{tikzpicture}
+\end{center}
+```
+
+* **Faiss** (Meta): cell, graph and quantized indexes, on GPUs [@johnson2019]
+* **hnswlib** and **Annoy** (Spotify); **ScaNN** (Google); graphs [@malkov2018]
+* **Vector databases** (Milvus, Qdrant, pgvector) wrap one of these
+
+## Summary: Strengths and Weaknesses of KNN
 
 | strengths | weaknesses |
 |:----------------------------------------|:--------------------------------------------------|
@@ -647,32 +894,18 @@ Seconds to predict 500 queries, $k = 5$:
 | easy to explain: "like these cases" | no model to read or to export |
 | multi-class and regression for free | no extrapolation; noisy for small $k$ |
 
-* A **baseline** to try early: a few lines, and a number that more complex models must beat
-* A distance is also useful *outside* classification: clustering (Class 10), anomaly detection, recommendation
+* A **baseline** to try early: a few lines, and a number to beat
+* A distance also serves clustering (Class 10), anomaly detection, recommendation
 
-## DEMO K1--K3: Notebook
+## DEMO K1--K6: Notebook
 
-```{=latex}
-\begin{center}
-\vspace{8mm}
-{\Huge\bfseries DEMO K1--K3:}\\[5mm]
-{\LARGE\ttfamily 02\_knn.ipynb}
-\end{center}
-```
+`02_knn.ipynb` (K1 to K6) **shows** scaling, $k$, the curse of dimensionality, pruning, Faiss
 
-## DEMO K4--K5: Notebook
-
-```{=latex}
-\begin{center}
-\vspace{8mm}
-{\Huge\bfseries DEMO K4--K5:}\\[5mm]
-{\LARGE\ttfamily 02\_knn.ipynb}
-\end{center}
-```
+**Look for:** one change at a time, on several data sets
 
 # Choosing a Learner
 
-## The Five Classes of Learners, Revisited
+## Recap: the Five Classes of Learners
 
 | class of learner | learns by | taught | what we built |
 |:---------------------|:------------------------------|:----------:|:-----------------------------|
@@ -682,12 +915,12 @@ Seconds to predict 500 queries, $k = 5$:
 | **Bayesians** | updating probabilities | 04 | naive Bayes, MAP |
 | **Analogizers** | similarity to known cases | 05, 06 | SVM with a kernel, KNN |
 
-* Project 1: one learner **per class**, the same data, the same methodology; for the *evolutionaries* the evolution must be the way the model is **learned**
-* Each class has its own idea of *what is learned*: rules, weights, populations, beliefs, similarities
+* Project 1: one learner **per class**, the same data and methodology [@domingos2015]
+* Each class has its own idea of *what is learned*
 
 ## One Protocol, Five Learners (Demo K5)
 
-Median test accuracy, 5 stratified 75/25 splits, standardization on the training part, $k$ and `min_samples_leaf` tuned by inner 5-fold CV:
+Median test accuracy of 5 stratified splits; $k$ and `min_samples_leaf` tuned by inner cross-validation:
 
 | data set | logistic | naive Bayes | SVM (RBF) | tree | KNN |
 |:---------------------|:--------------:|:------------------:|:---------------:|:-----------:|:-----------:|
@@ -698,24 +931,19 @@ Median test accuracy, 5 stratified 75/25 splits, standardization on the training
 | German credit | 0.744 | 0.696 | **0.752** | 0.692 | 0.732 |
 | heart disease | **0.842** | **0.842** | **0.842** | 0.776 | 0.829 |
 
-* The SVM wins or ties on four of six; KNN wins on wine; the plain logistic regression is never far
+* The support vector machine wins or ties on four of six
+* Neighbours win on wine; standardization uses the training part
 
 ## Is a Difference Real?
 
-The corrected resampled $t$-test of Class 05, KNN against three learners (difference of the mean accuracy, $p$-value):
+The corrected resampled $t$-test of Class 05: neighbours against three learners; filled dots have $p < 0.05$.
 
-| data set | KNN $-$ tree | KNN $-$ SVM | KNN $-$ logistic |
-|:--------------------|:-----------------------:|:-----------------------:|:-----------------------:|
-| breast cancer | $+0.036$ (0.012) | $-0.004$ (0.51) | $-0.008$ (0.37) |
-| digits | $+0.127$ (0.001) | $-0.013$ (0.063) | $+0.001$ (0.89) |
-| spam | $+0.024$ (0.012) | $-0.015$ (0.035) | $-0.008$ (0.085) |
-| wine | $+0.016$ (0.054) | $+0.011$ (0.24) | $+0.048$ (0.007) |
-| German credit | $+0.030$ (0.31) | $-0.031$ (0.038) | $-0.027$ (0.21) |
+![](plots/06/k5_ttest.pdf)
 
-* KNN is clearly **better than a single tree** on four of five data sets; against the SVM and the logistic regression, differences are small or in their favour
-* With 5 splits only large differences are detected: use more splits for close competitors
+* Neighbours clearly **beat a single tree** on four of five sets
+* Against the support vector machine and logistic regression the gaps are small
 
-## A Decision Guide
+## Summary: a Decision Guide
 
 | situation | first try |
 |:----------------------------------------------|:--------------------------------------------|
@@ -727,51 +955,69 @@ The corrected resampled $t$-test of Class 05, KNN against three learners (differ
 | many irrelevant features | tree, regularized linear model, not KNN |
 | must extrapolate | linear model, not tree or KNN |
 
-* Always: a **baseline**, a **split** that matches the problem, a **spread** over splits, a **test** for the claim
+* Always: a **baseline**, a matching **split**, a **spread**, a **test**
 
-## Key Takeaways (1/2)
+## Key Takeaways: Models and Limits
 
-* **Tree:** a sequence of questions; each chosen **greedily** to maximize the **gain** of a purity measure (Gini, entropy); numeric features are cut at midpoints found by a sorted scan
-* **Overfitting:** an unlimited tree memorizes (training accuracy 1.000); limit the depth or the leaf size, or **prune** by cost-complexity, *on validation data*
-* **Regression tree:** leaf means, variance reduction, a staircase that **cannot extrapolate**
-* **Strengths:** readable rules, no scaling, interactions; **weakness:** high variance and biased importances (permutation importance is safer)
+* A tree and nearest neighbours are **sets of cells**; any region with enough cells
+* The price is **data and dimension**, not a functional form
+* **Non-parametric** on the data: the model grows; hyperparameters remain
+* The best tree is **NP-complete** [@hyafil1976]: **greedy**, with exclusive or as its failure
+* A category of $v$ levels offers $2^{v-1} - 1$ questions
+* Neighbours need a distance: one-hot or Gower, not codes
 
-## Key Takeaways (2/2)
+## Key Takeaways: Trees
 
-* **KNN:** no training; the $k$ nearest cases vote (or average); the **distance** and **$k$** define the learner
-* **Scale** the features: otherwise the largest unit decides; **$k$** is the bias-variance knob
-* **Curse of dimensionality:** irrelevant features and high $d$ destroy the distance; prediction is $O(nd)$
-* Both are **local** methods and do not extrapolate; both are good baselines
-* **Choose** on one protocol, with a spread and a corrected test; the next class turns the weakness of the tree (variance) into a strength
+* **Tree:** greedy questions that maximize the **gain** (Gini, entropy)
+* Numeric cuts at midpoints, found by one sorted scan
+* An unlimited tree memorizes: limit the depth, or **prune**, on validation data
+* **Regression tree:** leaf means, a staircase that **cannot extrapolate**
+* **Strength:** readable rules; **weakness:** high variance, biased importances
+
+## Key Takeaways: KNN
+
+* **Nearest neighbours:** no training; the $k$ nearest cases vote or average
+* The **distance** and **$k$** define the learner; **scale** the features
+* **Curse of dimensionality:** noise features and high $d$ destroy the distance
+* **Prune** the cases or **approximate** the search to be faster
+* Both are **local** and do not extrapolate; both are good baselines
+* **Choose** on one protocol, with a spread and a test
 
 ## Lab 06: Build It from Scratch
 
 | Part | Task | twin |
-|:----------:|:----------------------------------------------------|:----------------------------|
-| A | Data visualization and evaluation methodology | — |
-| B | Gini, entropy, the best threshold (one sorted scan) | `DecisionTreeClassifier` |
-| C | A classification tree: recursion, prediction, rules | `DecisionTreeClassifier` |
+|:-----------:|:-------------------------------------------------|:------------------------------|
+| A | Data visualization, evaluation methodology | — |
+| B | Gini, entropy, the best threshold | `DecisionTreeClassifier` |
+| C | A classification tree from scratch | `DecisionTreeClassifier` |
 | D | Depth on validation data, pruning | `ccp_alpha` |
 | E | A regression tree: variance reduction | `DecisionTreeRegressor` |
-| F | KNN with `jax.numpy`: vote, scaling, $k$, noise | `KNeighborsClassifier` |
+| F | KNN with `jax.numpy` | `KNeighborsClassifier` |
 | G | KNN for regression | `KNeighborsRegressor` |
-| H | Challenge: the symbolist and the analogizer | `GridSearchCV` |
+| H | Challenge: symbolist and analogizer | `GridSearchCV` |
 
-* Guide `practice/06_trees_knn.pdf`; notebook `lab06_trees_knn.ipynb`; solution in `solutions/`
-* **Project 1:** the tree is your *symbolist*, KNN or the SVM your *analogizer*
+* **In class:** Parts A to C (60 minutes); **at home:** Parts D to H
+* Guide `practice/06_trees_knn.pdf`; notebook `lab06_trees_knn.ipynb`
+* **Project 1:** the tree is the *symbolist*; neighbours are the *analogizer*
 
-## References (1/2)
+<!-- cites: @breiman1984 @quinlan1986 @cover1967 @hastie2009 @james2023 @strobl2007 @beyer1999 @bentley1975 @domingos2015 @hyafil1976 @hart1968 @wilson1972 @stone1977 @johnson2019 @malkov2018 -->
 
-* L. Breiman, J. Friedman, R. Olshen, C. Stone, *Classification and Regression Trees*, 1984
-* J. R. Quinlan, "Induction of decision trees", *Machine Learning*, 1986; *C4.5: Programs for Machine Learning*, 1993
-* T. Cover, P. Hart, "Nearest neighbor pattern classification", *IEEE Trans. Information Theory*, 1967
-* T. Hastie, R. Tibshirani, J. Friedman, *The Elements of Statistical Learning*, 2009: chapters 9.2 (trees), 13 (nearest neighbours)
-* G. James et al., *An Introduction to Statistical Learning with Applications in Python*, 2023: chapters 8 (trees), 2.2.3 ($k$-NN)
+<!-- refs:begin -->
+## References
 
-## References (2/2)
+```{=latex}
+\newcommand{\refsize}{\fontsize{5.5}{6.4}\selectfont}
+```
 
-* C. Bishop, *Pattern Recognition and Machine Learning*, 2006: section 14.4 (tree-based models)
-* C. Strobl, A.-L. Boulesteix, A. Zeileis, T. Hothorn, "Bias in random forest variable importance measures", *BMC Bioinformatics*, 2007
-* R. Beyer, J. Goldstein, R. Ramakrishnan, U. Shaft, "When is nearest neighbor meaningful?", *ICDT*, 1999
-* J. Bentley, "Multidimensional binary search trees used for associative searching", *Communications of the ACM*, 1975
-* P. Domingos, *The Master Algorithm*, 2015
+| | |
+|:-----------------------------------------|:-------------------------------------------------|
+| \refsize Bentley, Jon Louis. 1975. “Multidimensional Binary Search Trees Used for Associative Searching.” Communications of the ACM 18 (9): 509–17. | \refsize James, Gareth, Daniela Witten, Trevor Hastie, Robert Tibshirani, and Jonathan Taylor. 2023. An Introduction to Statistical Learning with Applications in Python. Springer. |
+| \refsize Beyer, Kevin, Jonathan Goldstein, Raghu Ramakrishnan, and Uri Shaft. 1999. “When Is ‘Nearest Neighbor’ Meaningful?” International Conference on Database Theory (ICDT), 217–35. | \refsize Johnson, Jeff, Matthijs Douze, and Hervé Jégou. 2019. “Billion-Scale Similarity Search with GPUs.” IEEE Transactions on Big Data 7 (3): 535–47. |
+| \refsize Breiman, Leo, Jerome Friedman, Richard Olshen, and Charles Stone. 1984. Classification and Regression Trees. Wadsworth. | \refsize Malkov, Yu. A., and D. A. Yashunin. 2018. “Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs.” IEEE Transactions on Pattern Analysis and Machine Intelligence 42 (4): 824–36. |
+| \refsize Cover, Thomas, and Peter Hart. 1967. “Nearest Neighbor Pattern Classification.” IEEE Transactions on Information Theory 13 (1): 21–27. | \refsize Quinlan, J. Ross. 1986. “Induction of Decision Trees.” Machine Learning 1 (1): 81–106. |
+| \refsize Domingos, Pedro. 2015. The Master Algorithm. Basic Books. | \refsize Stone, Charles J. 1977. “Consistent Nonparametric Regression.” The Annals of Statistics 5 (4): 595–620. |
+| \refsize Hart, Peter. 1968. “The Condensed Nearest Neighbor Rule.” IEEE Transactions on Information Theory 14 (3): 515–16. | \refsize Strobl, Carolin, Anne-Laure Boulesteix, Achim Zeileis, and Torsten Hothorn. 2007. “Bias in Random Forest Variable Importance Measures.” BMC Bioinformatics 8: 25. |
+| \refsize Hastie, Trevor, Robert Tibshirani, and Jerome Friedman. 2009. The Elements of Statistical Learning. 2nd ed. Springer. | \refsize Wilson, Dennis L. 1972. “Asymptotic Properties of Nearest Neighbor Rules Using Edited Data.” IEEE Transactions on Systems, Man, and Cybernetics SMC-2 (3): 408–21. |
+| \refsize Hyafil, Laurent, and Ronald L. Rivest. 1976. “Constructing Optimal Binary Decision Trees Is NP-Complete.” Information Processing Letters 5 (1): 15–17. | \refsize  |
+
+<!-- refs:end -->

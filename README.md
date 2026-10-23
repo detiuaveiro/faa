@@ -155,16 +155,20 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 
 | Block | Contents | Demo notebook |
 |:--|:--|:--|
-| Decision trees, classification | A tree as questions and as rules, the partition of the space, impurity (Gini, entropy, error), the gain, the greedy algorithm, numeric thresholds by one sorted scan, categorical features | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T1–T2** |
+| Models without a formula | Linear model, tree, 1-NN and k-NN as sets of cells (half-planes, boxes, Voronoi cells), approximation of a circle, the price in dimension | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **B1** |
+| Decision trees, classification | A tree as questions and as rules, impurity (Gini, entropy, error), the gain, the greedy algorithm, numeric thresholds by one sorted scan | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T1–T2** |
+| Feature types and encoding | Numeric, ordinal and nominal columns, encodings, questions on a category, distances between categories, many levels, missing values | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T6** |
+| Computational limits | Growth of the cost, P, NP, NP-complete, NP-hard, counting the trees, greedy against exhaustive search | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T7** |
 | Overfitting and pruning | Stopping rules, depth and leaf size on validation data, cost-complexity pruning | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T3** |
 | Regression trees | Variance reduction, the staircase, no extrapolation, trees against linear models | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T4** |
 | Instability and importances | Bootstrap trees, impurity against permutation importance, correlated and noise features | [`01_decision_trees.ipynb`](notebooks/06-trees-knn/01_decision_trees.ipynb) — **T5** |
 | k-nearest neighbours | The algorithm, a worked example, distances, scaling, the choice of $k$, weighted votes | [`02_knn.ipynb`](notebooks/06-trees-knn/02_knn.ipynb) — **K1–K2** |
 | KNN limits | The curse of dimensionality, irrelevant features, KNN for regression, cost of prediction (kd-tree, ball tree) | [`02_knn.ipynb`](notebooks/06-trees-knn/02_knn.ipynb) — **K3–K5** |
+| Faster KNN | Prototype selection (Hart, Wilson), approximate nearest neighbours with FAISS (IVF, HNSW, product quantization) | [`02_knn.ipynb`](notebooks/06-trees-knn/02_knn.ipynb) — **K6** |
 | Choosing a learner | Logistic regression, naive Bayes, SVM, tree and KNN on six data sets, with the corrected resampled $t$-test | [`02_knn.ipynb`](notebooks/06-trees-knn/02_knn.ipynb) — **K5** |
 
 **Data:** breast cancer, German credit, heart disease, wine quality, digits, spam, concrete, abalone, auto-mpg and California housing (all in [`datasets/`](datasets/)), plus synthetic moons.
-**Lab:** [`lab06_trees_knn.ipynb`](notebooks/06-trees-knn/lab06_trees_knn.ipynb) (helpers in `lab06_utils.py`): impurity and the best split, a classification tree and a regression tree from scratch, pruning on validation data, KNN with `jax.numpy` for classification and regression, and a comparison on repeated splits; solved and explained in [`solutions/lab06_trees_knn_solution.ipynb`](solutions/lab06_trees_knn_solution.ipynb).
+**Lab:** [`lab06_trees_knn.ipynb`](notebooks/06-trees-knn/lab06_trees_knn.ipynb) (helpers in `lab06_utils.py`): Parts A to C in class (60 minutes), Parts D to H at home; impurity and the best split, a classification tree and a regression tree from scratch, pruning on validation data, KNN with `jax.numpy` for classification and regression, and a comparison on repeated splits; solved and explained in [`solutions/lab06_trees_knn_solution.ipynb`](solutions/lab06_trees_knn_solution.ipynb).
 
 ---
 

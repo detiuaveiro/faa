@@ -12,6 +12,8 @@ title: "Lab 06 — Decision Trees and k-Nearest Neighbours, Built from Scratch"
 
 **The rule of this lab.** Trees and KNN have no gradient to descend: they are *algorithms*. You write the tree with NumPy and the distances of KNN with `jax.numpy`, and compare each with its scikit-learn twin on the **same split and the same scaling**. The notebook prints the difference; explain it (ties, `float32`, a tolerance).
 
+**In class (60 minutes): Parts A, B and C**, the tree from scratch. **At home: Parts D to H**, the depth and pruning, the regression tree, KNN and the challenge; the solution notebook explains them.
+
 By the end of the lab you should be able to:
 
 1. Compute the Gini index and the entropy of a node and the gain of a question, and find the best threshold of a numeric feature with one sorted scan.
@@ -25,10 +27,10 @@ By the end of the lab you should be able to:
 | A | Data visualization and evaluation methodology: breast cancer, German credit, concrete | — | 10 min |
 | B | Impurity and the best split: Gini, entropy, one sorted scan | `DecisionTreeClassifier(max_depth=1)` | 20 min |
 | C | A classification tree from scratch: recursion, prediction, rules | `DecisionTreeClassifier` | 30 min |
-| D | Overfitting: the depth on validation data, pruning | `cost_complexity_pruning_path` | 10 min |
-| E | A regression tree: variance reduction | `DecisionTreeRegressor` | 10 min |
-| F | KNN with `jax.numpy`: distances, neighbours, vote; scaling, $k$, noise | `KNeighborsClassifier` | 25 min |
-| G | KNN for regression | `KNeighborsRegressor` | 5 min |
+| D | Overfitting: the depth on validation data, pruning | `cost_complexity_pruning_path` | home |
+| E | A regression tree: variance reduction | `DecisionTreeRegressor` | home |
+| F | KNN with `jax.numpy`: distances, neighbours, vote; scaling, $k$, noise | `KNeighborsClassifier` | home |
+| G | KNN for regression | `KNeighborsRegressor` | home |
 | H | Challenge: the symbolist and the analogizer on repeated splits | `GridSearchCV`, `LogisticRegression` | home |
 
 ## Setup
