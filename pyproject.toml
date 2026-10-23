@@ -30,6 +30,9 @@ dependencies = [
     "kneeliverse>=1.2.0",
     "pyUTSAlgorithms>=0.2.1",
     "pyNNMF>=0.2.0",
+    "faiss-cpu>=1.15.1",
+    "xgboost>=3.4.1",
+    "lightgbm>=4.7.0",
     "jupyterlab>=4.6.4",
     "ipykernel>=7.3.0",
 ]
@@ -46,6 +49,7 @@ include = ["notebooks", "solutions"]
 ignore = [
     "notebooks/05-svm-neural-networks", "solutions/lab05_svm_neural_networks_solution.ipynb",
     "notebooks/06-trees-knn", "solutions/lab06_trees_knn_solution.ipynb",
+    "notebooks/07-ensembles",
 ]
 venvPath = "."
 venv = "venv"

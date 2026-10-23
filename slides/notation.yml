@@ -1,0 +1,79 @@
+# Notation of Class 01 (course-wide list: ~/.agents/skills/teaching/references/notation.md).
+# Names are what check_math.py sees; `first:` is the heading of the frame that introduces the symbol.
+symbols:
+  # N1: data and terms
+  n:      {kind: scalar, meaning: number of examples, first: "Notation N1"}
+  d:      {kind: scalar, meaning: number of features, first: "Notation N1"}
+  X:      {kind: matrix, shape: n x d, meaning: data matrix, first: "Notation N1"}
+  x_i:    {kind: scalar, meaning: example i, first: "Notation N1"}
+  y:      {kind: scalar, meaning: targets, first: "Notation N1"}
+  y_i:    {kind: scalar, meaning: target of example i, first: "Notation N1"}
+  y_hat_i: {kind: scalar, meaning: prediction for example i, first: "Notation N1"}
+  f:      {kind: scalar, meaning: true pattern, first: "Notation N1"}
+  f_hat:  {kind: scalar, meaning: learned estimate, first: "Notation N1"}
+  θ:      {kind: scalar, meaning: parameters, first: "Notation N1"}
+  m:      {kind: scalar, meaning: number of parameters, first: "Notation N1"}
+  D:      {kind: scalar, meaning: dataset (X, y), first: "Notation N1"}
+  ε:      {kind: scalar, meaning: noise, first: "Notation N1"}
+  ε_i:    {kind: scalar, meaning: noise of example i, first: "Data = Pattern + Noise"}
+  σ:      {kind: scalar, meaning: noise standard deviation, first: "Data = Pattern + Noise"}
+  i:      {kind: scalar, meaning: index of an example, first: "Notation N1"}
+  # frames of Block 1
+  q:      {kind: scalar, meaning: degree of a polynomial, first: "Two Models"}
+  x_bar:  {kind: scalar, meaning: mean of the values, first: "Correlation and the Ice-Cream Example"}
+  y_bar:  {kind: scalar, meaning: mean of the targets, first: "Correlation and the Ice-Cream Example"}
+  e_i:    {kind: scalar, meaning: error of example i, first: "Errors and Mean Squared Error"}
+  e:      {kind: scalar, meaning: an error, first: "Errors and Mean Squared Error"}
+  MSE:    {kind: scalar, meaning: mean squared error, first: "Errors and Mean Squared Error"}
+  θ_star: {kind: scalar, meaning: best parameters, first: "Fitting Means Minimizing"}
+  # N2: information
+  M:      {kind: scalar, meaning: model, first: "Notation N2"}
+  x:      {kind: scalar, meaning: an outcome or example, first: "Notation N2"}
+  u:      {kind: scalar, meaning: a string, first: "Kolmogorov Complexity"}
+  c:      {kind: scalar, meaning: constant of the error cost, first: "Where BIC Comes From"}
+  π:      {kind: scalar, meaning: the constant pi, first: "Where BIC Comes From"}
+  λ:      {kind: scalar, meaning: regularization strength, first: "Regularization"}
+  Ω:      {kind: scalar, meaning: penalty on complex models, first: "Regularization"}
+  # N3a: scores and intervals
+  k:      {kind: scalar, meaning: number of folds, first: "Notation N3a"}
+  s_i:    {kind: scalar, meaning: score of fold i, first: "Notation N3a"}
+  s_bar:  {kind: scalar, meaning: mean of the fold scores, first: "Notation N3a"}
+  s:      {kind: scalar, meaning: standard deviation of the fold scores, first: "Notation N3a"}
+  SE:     {kind: scalar, meaning: standard error, first: "Notation N3a"}
+  CI:     {kind: scalar, meaning: confidence interval, first: "Notation N3a"}
+  t_0_975_kminus1: {kind: scalar, meaning: t quantile for the 95% interval, first: "The Confidence Interval"}
+  TP:     {kind: scalar, meaning: true positives, first: "The Confusion Matrix"}
+  FP:     {kind: scalar, meaning: false positives, first: "The Confusion Matrix"}
+  FN:     {kind: scalar, meaning: false negatives, first: "The Confusion Matrix"}
+  TN:     {kind: scalar, meaning: true negatives, first: "The Confusion Matrix"}
+  precision: {kind: scalar, meaning: share of flagged cases that are positive, first: "Precision, Recall"}
+  recall: {kind: scalar, meaning: share of positive cases found, first: "Precision, Recall"}
+  F_1:    {kind: scalar, meaning: harmonic mean of precision and recall, first: "Precision, Recall"}
+  # N3b: tests
+  A:      {kind: scalar, meaning: model A, first: "Comparing Two Models"}
+  B:      {kind: scalar, meaning: model B, first: "Comparing Two Models"}
+  s_j:    {kind: scalar, meaning: score on fold or split j, first: "Comparing Two Models"}
+  δ_j:    {kind: scalar, meaning: score difference on fold or split j, first: "Comparing Two Models"}
+  J:      {kind: scalar, meaning: number of scores, first: "Notation N3b"}
+  N:      {kind: scalar, meaning: number of disagreements, first: "Notation N3b"}
+  δ_bar:  {kind: scalar, meaning: mean score difference, first: "Notation N3b"}
+  s_δ:    {kind: scalar, meaning: standard deviation of the differences, first: "Notation N3b"}
+  n_train: {kind: scalar, meaning: examples to train, first: "Notation N3b"}
+  n_test: {kind: scalar, meaning: examples to test, first: "Notation N3b"}
+  n_11:   {kind: scalar, meaning: both models right, first: "Notation N3b"}
+  n_10:   {kind: scalar, meaning: only model A right, first: "Notation N3b"}
+  n_01:   {kind: scalar, meaning: only model B right, first: "Notation N3b"}
+  n_00:   {kind: scalar, meaning: both models wrong, first: "Notation N3b"}
+  T:      {kind: scalar, meaning: t statistic, first: "Notation N3b"}
+  χ:      {kind: scalar, meaning: chi-squared statistic, first: "Notation N3b"}
+  p_val:  {kind: scalar, meaning: p-value, first: "Notation N3b"}
+  α:      {kind: scalar, meaning: significance level, first: "Notation N3b"}
+  # pitfalls
+  bias:   {kind: scalar, meaning: bias at one input, first: "Bias and Variance"}
+  variance: {kind: scalar, meaning: variance of the fit, first: "Bias and Variance"}
+  f_bar:  {kind: scalar, meaning: average fit over training sets, first: "Bias and Variance"}
+  Δ_1:    {kind: scalar, meaning: truth minus average fit, first: "Bias and Variance"}
+  Δ_2:    {kind: scalar, meaning: average fit minus one fit, first: "Bias and Variance"}
+  r:      {kind: scalar, meaning: correlation, first: "Correlation and the Ice-Cream Example"}
+  S_t:    {kind: scalar, meaning: state at time t, first: "Reinforcement Learning"}
+functions: [p, h, H, K, E, f, f_hat, L, L_λ, l, ℓ, Ω]

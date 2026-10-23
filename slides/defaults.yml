@@ -4,3 +4,4 @@ resource-path:
   - "../assets/figures"
 include-in-header:
   - "header.tex"
+citeproc: true

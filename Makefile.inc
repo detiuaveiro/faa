@@ -30,8 +30,13 @@ endif
 all: $(TARGETS)
 pdf: $(TARGETS)
 
+# A deck is rebuilt when its plots (demo PDFs, assets/figures/plots/NN/) or the shared header change
+PLOT_PDFS = $(wildcard ../assets/figures/plots/$(firstword $(subst _, ,$*))/*.pdf)
+DECK_DEPS = $(wildcard header.tex config.yml defaults.yml)
+.SECONDEXPANSION:
+
 # 1:1 Compilation Rule (Standard & Slides)
-%.pdf: %.md
+%.pdf: %.md $$(DECK_DEPS) $$(PLOT_PDFS)
 	@mkdir -p $(BUILD_PATH)/$*
 	@pandoc $(PANDOC_FLAGS) $(PANDOC_DOC_FLAGS) \
 		--pdf-engine=latexmk \
