@@ -18,7 +18,7 @@ Academic Year: [**2026/2027 – 1.º Semestre**](https://www.ua.pt/file/89688)
 
 The classic model families (supervised, unsupervised, semi- and self-supervised, reinforcement learning) are then studied on these foundations.
 
-**Class format:** each week has one 3-hour class: **1 hour of lecture** followed by **2 hours of lab work**. Class 01 is the exception: a ~2-hour lecture with live Jupyter demos.
+**Class format:** each week has one 3-hour class: **2 hours of exposition** (slides and live Jupyter demos) followed by **1 hour of practical work** with the lab guide (every class, Class 01 included).
 
 ---
 
@@ -68,17 +68,20 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 
 ### Class 01 — Learning as Compression, Pitfalls, and Taxonomies
 
-**Slides:** [`slides/01_foundations.pdf`](slides/01_foundations.pdf)
+**Slides:** [`slides/01_foundations.pdf`](slides/01_foundations.pdf) · **Lab guide:** [`practice/01_foundations.pdf`](practice/01_foundations.pdf)
 
 | Block | Contents | Demo notebook |
 |:--|:--|:--|
-| Course introduction | Professor, topics, schedule, evaluation, environment setup | — |
-| What is learning? | Task/experience/performance; *The Signal and the Noise*; pattern vs. noise; memorization vs. generalization | [`01_learning_as_compression.ipynb`](notebooks/01-foundations/01_learning_as_compression.ipynb) — **D1** |
-| Math toolbox | Summation, mean, MSE, probability, logarithms, argmin, variance | — |
-| Learning as compression | Entropy, Kolmogorov complexity, MDL/BIC, likelihood and regularization as code length, the link to optimization | [`01_learning_as_compression.ipynb`](notebooks/01-foundations/01_learning_as_compression.ipynb) — **D2, D3** |
-| Evaluation and statistical validation | Why evaluate; train/validation/test; cross-validation; confidence intervals; baselines and metrics; corrected t-test; McNemar's test | [`02_evaluation_validation.ipynb`](notebooks/01-foundations/02_evaluation_validation.ipynb) — **D4a–D4f** |
-| Limitations and pitfalls | Under/overfitting and bias–variance; curse of dimensionality; No Free Lunch; data leakage; correlation vs. causation; shortcuts, distribution shift, sampling bias | [`03_pitfalls.ipynb`](notebooks/01-foundations/03_pitfalls.ipynb) — **D5–D10** |
-| Learning taxonomies | Supervised, unsupervised, semi-supervised, self-supervised, and reinforcement learning | [`04_taxonomies.ipynb`](notebooks/01-foundations/04_taxonomies.ipynb) — **D11** |
+| Course introduction | Professor, topics, schedule, evaluation, class format, environment setup | — |
+| What is learning? | Task/experience/performance; pattern vs. noise; notation; sum, mean, error, MSE; memorization vs. generalization | [`01_learning_as_compression.ipynb`](notebooks/01-foundations/01_learning_as_compression.ipynb) — **D1** |
+| Learning as compression | Information, entropy, Kolmogorov complexity, MDL/BIC, likelihood and regularization as code length | [`01_learning_as_compression.ipynb`](notebooks/01-foundations/01_learning_as_compression.ipynb) — **D2, D3** |
+| From model to search | Finding the model as an optimization problem (argmin), why not try every value | — |
+| Evaluating a model | Why evaluate; train/validation/test; cross-validation; variance and confidence intervals; hypothesis testing; baselines and metrics; comparing two models (corrected resampled t-test, McNemar's test) | [`02_evaluation_validation.ipynb`](notebooks/01-foundations/02_evaluation_validation.ipynb) — **D4a–D4d** live, **D4e–D4g** read in the lab |
+| Why models fail | Under/overfitting and bias–variance; No Free Lunch; data leakage; correlation vs. causation; shortcuts, distribution shift, sampling bias | [`03_pitfalls.ipynb`](notebooks/01-foundations/03_pitfalls.ipynb) — **D5–D9** |
+| Kinds of learning | Supervised, unsupervised, semi-supervised, self-supervised, and reinforcement learning | [`04_taxonomies.ipynb`](notebooks/01-foundations/04_taxonomies.ipynb) — **D10** |
+
+**Data:** breast cancer and heart disease (in [`datasets/`](datasets/)), plus synthetic noise.
+**Lab:** [`lab01_foundations.ipynb`](notebooks/01-foundations/lab01_foundations.ipynb) (helpers in `lab01_utils.py`): evaluation methodology on breast cancer, written with NumPy and compared with its scikit-learn or SciPy twin: a stratified hold-out and the majority baseline, $k$-fold cross-validation with its 95% interval, the confusion matrix, precision, recall and $F_1$, leakage in feature selection and scaling, the corrected resampled $t$-test and McNemar's test (given as functions: run and interpret them; the derivations are a reading appendix of the guide), and a challenge at home with a permutation test and heart disease; solved and explained in [`solutions/lab01_foundations_solution.ipynb`](solutions/lab01_foundations_solution.ipynb).
 
 
 ### Class 02 — Blind vs. Gradient-Based Optimization
