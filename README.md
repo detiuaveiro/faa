@@ -170,6 +170,22 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 **Data:** breast cancer, German credit, heart disease, wine quality, digits, spam, concrete, abalone, auto-mpg and California housing (all in [`datasets/`](datasets/)), plus synthetic moons.
 **Lab:** [`lab06_trees_knn.ipynb`](notebooks/06-trees-knn/lab06_trees_knn.ipynb) (helpers in `lab06_utils.py`): Parts A to C in class (60 minutes), Parts D to H at home; impurity and the best split, a classification tree and a regression tree from scratch, pruning on validation data, KNN with `jax.numpy` for classification and regression, and a comparison on repeated splits; solved and explained in [`solutions/lab06_trees_knn_solution.ipynb`](solutions/lab06_trees_knn_solution.ipynb).
 
+### Class 07 — Ensemble Models
+
+**Slides:** [`slides/07_ensembles.pdf`](slides/07_ensembles.pdf) · **Lab guide:** [`practice/07_ensembles.pdf`](practice/07_ensembles.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| One model is a guess | Gallery of ten models on the moons, on four other sets and on two real tables in two dimensions, the regression twin (a sine and house value against income), disagreement, the ceiling of the problem | [`01_decision_boundaries.ipynb`](notebooks/07-ensembles/01_decision_boundaries.ipynb) — **E1** |
+| Why combining helps, voting | Condorcet, the variance of an average of correlated errors, the ambiguity identity, hard, soft and weighted votes, failure cases | [`02_bagging_forests.ipynb`](notebooks/07-ensembles/02_bagging_forests.ipynb) — **E2** |
+| Bagging and random forests | Bootstrap (63.2 %), out-of-bag error, `max_features` and the correlation of trees, bias and variance, importances, a stable learner | [`02_bagging_forests.ipynb`](notebooks/07-ensembles/02_bagging_forests.ipynb) — **E3** |
+| Boosting | AdaBoost (weights, member weight), margins, gradient boosting by residuals, shrinkage, early stopping, HistGB, XGBoost, LightGBM, label noise | [`03_boosting.ipynb`](notebooks/07-ensembles/03_boosting.ipynb) — **E4** |
+| Stacking | Meta-learner, out-of-fold predictions, the leak, blending | [`04_stacking_and_choice.ipynb`](notebooks/07-ensembles/04_stacking_and_choice.ipynb) — **E5** |
+| Using ensembles | Real data with the Class 01 protocol, calibration, which ensemble when | [`04_stacking_and_choice.ipynb`](notebooks/07-ensembles/04_stacking_and_choice.ipynb) — **E5b** |
+
+**Data:** synthetic moons, blobs, circles and XOR; breast cancer, heart disease, spam and California housing ([`datasets/`](datasets/)).
+**Lab:** [`lab07_ensembles.ipynb`](notebooks/07-ensembles/lab07_ensembles.ipynb) (helpers in `lab07_utils.py`): Parts A to D in class (60 minutes), Parts E and F at home; hard and soft vote, bagging with the out-of-bag error, AdaBoost with stumps, gradient boosting with early stopping, stacking with out-of-fold predictions and pseudo-residuals with `jax.grad`; solved and explained in [`solutions/lab07_ensembles_solution.ipynb`](solutions/lab07_ensembles_solution.ipynb).
+
 ---
 
 ## 5. Evaluation

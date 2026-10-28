@@ -50,8 +50,6 @@ symbols:
   recall: {kind: scalar, meaning: share of positive cases found, first: "Precision, Recall"}
   F_1:    {kind: scalar, meaning: harmonic mean of precision and recall, first: "Precision, Recall"}
   # N3b: tests
-  A:      {kind: scalar, meaning: model A, first: "Comparing Two Models"}
-  B:      {kind: scalar, meaning: model B, first: "Comparing Two Models"}
   s_j:    {kind: scalar, meaning: score on fold or split j, first: "Comparing Two Models"}
   δ_j:    {kind: scalar, meaning: score difference on fold or split j, first: "Comparing Two Models"}
   J:      {kind: scalar, meaning: number of scores, first: "Notation N3b"}
@@ -76,4 +74,21 @@ symbols:
   Δ_2:    {kind: scalar, meaning: average fit minus one fit, first: "Bias and Variance"}
   r:      {kind: scalar, meaning: correlation, first: "Correlation and the Ice-Cream Example"}
   S_t:    {kind: scalar, meaning: state at time t, first: "Reinforcement Learning"}
+  # N7: ensembles (Class 07)
+  B:      {kind: scalar, meaning: number of members, first: "Notation N7"}
+  b:      {kind: scalar, meaning: index of a member or round, first: "Notation N7"}
+  f_ens:  {kind: scalar, meaning: the ensemble, first: "Notation N7"}
+  ρ:      {kind: scalar, meaning: correlation of two members errors, first: "Notation N7"}
+  w_i:    {kind: scalar, meaning: weight of example i, first: "Notation N7"}
+  err_b:  {kind: scalar, meaning: weighted error of member b, first: "Notation N7"}
+  β_b:    {kind: scalar, meaning: weight of member b, first: "Notation N7"}
+  η:      {kind: scalar, meaning: shrinkage, first: "Notation N7"}
+  γ:      {kind: scalar, meaning: accuracy of one voter, first: "Notation N7b"}
+  a_B:    {kind: scalar, meaning: accuracy of the majority of B voters, first: "Notation N7b"}
+  a_3:    {kind: scalar, meaning: accuracy of the majority of 3 voters, first: "Notation N7b"}
+  v:      {kind: scalar, meaning: variance of one member, first: "Notation N7b"}
+  V_B:    {kind: scalar, meaning: variance of the mean of B members, first: "Notation N7b"}
+  ξ:      {kind: scalar, meaning: share left out of a bootstrap sample, first: "Notation N7b"}
+  E_b:    {kind: scalar, meaning: exponential loss of member b, first: "Notation N7b"}
+  Z_b:    {kind: scalar, meaning: weight normaliser, first: "Notation N7b"}
 functions: [p, h, H, K, E, f, f_hat, L, L_λ, l, ℓ, Ω]
