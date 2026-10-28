@@ -214,7 +214,7 @@ jupyter lab notebooks/
 | macOS | `brew install openblas pkg-config` (Xcode command-line tools for the compiler) |
 | Slackware | `openblas` package |
 
-`make venv NUMPY_SOURCE=no` forces the wheel; `NUMPY_SOURCE=yes` forces the source build and fails if it does not work. Plain `python3 -m venv venv && source venv/bin/activate && pip install .` is equivalent to the wheel path.
+`make venv NUMPY_SOURCE=no` forces the wheel; `NUMPY_SOURCE=yes` forces the source build and fails if it does not work. Plain `python3 -m venv venv && source venv/bin/activate && pip install -e .` is equivalent to the wheel path.
 
 **If `make venv` fails or the notebooks do not run, notify the professor** ([`mario.antunes@ua.pt`](mailto:mario.antunes@ua.pt)) with your operating system, the output of `python3 --version` and the last lines of the error.
 
@@ -240,6 +240,7 @@ Linters, type checkers and hook tools (`ruff`, `basedpyright`, `vulture`, `pre-c
 |:--|:--|
 | `slides/` | Lectures in Pandoc Markdown with inline TikZ figures, compiled to Beamer PDFs (`moloch` theme) |
 | `notebooks/` | Jupyter notebooks, one folder per class |
+| `src/faa/` | The small package every notebook imports (`pip install -e .`): plot style and `plotlib.save` (shows a figure in the notebook and stores the transparent PDF of the slide), data loaders, generated sets, model galleries, boundary and curve panels |
 | `datasets/` | Real, small datasets as zstd-compressed CSV (`*.csv.zst`, read directly with `polars.read_csv`); sources and columns in `datasets/README.md` |
 | `practice/` | Lab guides in Pandoc Markdown, compiled to A4 PDFs |
 | `solutions/` | Solved lab notebooks with step-by-step explanations (try the lab first) |
@@ -247,7 +248,7 @@ Linters, type checkers and hook tools (`ruff`, `basedpyright`, `vulture`, `pre-c
 | `assets/` | Logo, banner, and figures |
 | `Makefile`, `Makefile.inc` | Build system: `make all` compiles every PDF (intermediate files cached in `/dev/shm`); `make venv` creates the Python environment |
 | `.pre-commit-config.yaml` | Quality gate: formatting checks, notebook outputs stripped (`nbstripout`), `ruff` on notebooks, and a full build |
-| `pyproject.toml` | Python dependencies (`pip install .`) and ruff/basedpyright configuration |
+| `pyproject.toml` | Python dependencies and the package `faa` (`pip install -e .`) and ruff/basedpyright configuration |
 
 ---
 

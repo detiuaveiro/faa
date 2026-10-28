@@ -1,5 +1,5 @@
 """Plot style and save helper (matplotlib for geometry and custom charts, seaborn for distributions, categories and heatmaps) for the slide figures of all FAA classes.
-Lives in notebooks/plotlib.py; a demo adds `..` to sys.path, imports it and calls `plotlib.setup(module="06")` once (the class number).
+Lives in src/faa/plotlib.py (package `faa`, installed by `make venv`): a demo runs `from faa import plotlib` and calls `plotlib.setup(module="06")` once (the class number).
 Colours are the Okabe-Ito palette of slides/header.tex (cblue ... cgray).
 
 Every figure is a PDF with a transparent background in `assets/figures/plots/<MODULE>/`; the slides include it as
@@ -13,10 +13,9 @@ from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
 
-ROOT = Path(__file__).resolve().parents[1]  # repo root: this file lives in notebooks/
+ROOT = Path(__file__).resolve().parents[2]  # repo root: this file lives in src/faa/
 MODULE = "00"  # class number, set by setup(module=...)
 BLUE, ORANGE, GREEN, RED, SKY, PURPLE, GREY = (
     "#0072B2",
@@ -42,7 +41,7 @@ def setup(module: str | None = None) -> None:
         "axes.spines.top": False, "axes.spines.right": False, "xtick.major.width": 0.6, "ytick.major.width": 0.6,
         "xtick.major.size": 2.5, "ytick.major.size": 2.5, "lines.linewidth": 1.3, "legend.frameon": False,
         "axes.grid": True, "grid.color": "#D5D8DC", "grid.linewidth": 0.4, "axes.axisbelow": True,
-        "savefig.transparent": True, "pdf.fonttype": 42, "mathtext.fontset": "dejavusans",
+        "figure.dpi": 130, "pdf.fonttype": 42, "mathtext.fontset": "dejavusans",
     })  # fmt: skip
     sns.set_palette(
         [BLUE, ORANGE, GREEN, RED, SKY, PURPLE, GREY]
@@ -68,24 +67,20 @@ def fig(kind: str = "full", height: float = 1.6, **kw):
     return plt.subplots(figsize=(FULL if kind == "full" else COL, height), **kw)
 
 
-def save(fig, name: str) -> Path:
-    """Write assets/figures/plots/<MODULE>/<name>.pdf (transparent) and close the figure."""
+def save(fig, name: str):
+    """Write assets/figures/plots/<MODULE>/<name>.pdf (transparent, the size of the slide), silently, and return the figure.
+
+    The figure is the value of the cell, as with `plt.plot`: the notebook displays it. In a notebook it is first made
+    larger (a higher dpi, so text and lines scale with it) and white; the PDF is already written at the slide size."""
     out = ROOT / "assets" / "figures" / "plots" / MODULE
     out.mkdir(parents=True, exist_ok=True)
-    path = out / f"{name}.pdf"
-    fig.savefig(path, transparent=True, bbox_inches="tight", pad_inches=0.03)
-    plt.close(fig)
-    print("wrote", path.relative_to(ROOT))
-    return path
+    fig.savefig(out / f"{name}.pdf", transparent=True, bbox_inches="tight", pad_inches=0.03)
+    from IPython import get_ipython
 
-
-def ellipse(mu, cov, d: float, n: int = 120) -> np.ndarray:
-    """Points at Mahalanobis distance d from mu."""
-    w, v = np.linalg.eigh(np.asarray(cov))
-    t = np.linspace(0, 2 * np.pi, n)
-    return (np.asarray(mu)[:, None] + v @ (d * np.sqrt(w)[:, None] * np.stack([np.cos(t), np.sin(t)]))).T
-
-
-def circle(c, r: float, n: int = 120) -> np.ndarray:
-    t = np.linspace(0, 2 * np.pi, n)
-    return np.stack([c[0] + r * np.cos(t), c[1] + r * np.sin(t)], 1)
+    if get_ipython() is not None:
+        fig.set_dpi(
+            min(400.0, max(200.0, 760.0 / fig.get_size_inches()[0]))
+        )  # about 760 px wide whatever the slide size
+        fig.patch.set_facecolor("white")
+    plt.close(fig)  # the returned figure is shown once, as the value of the cell
+    return fig

@@ -37,7 +37,7 @@ venv:
 	else \
 		$(VENV)/bin/pip install "$$req"; \
 	fi
-	@$(VENV)/bin/pip install .; rc=$$?; rm -rf build faa.egg-info; exit $$rc
+	@$(VENV)/bin/pip install -e .; rc=$$?; rm -rf build faa.egg-info src/faa.egg-info; exit $$rc
 	$(VENV)/bin/python -c "import numpy as np; b = np.show_config(mode='dicts')['Build Dependencies']['blas']; print('NumPy', np.__version__, 'BLAS:', b['name'], b['version'], b.get('lib directory', ''))"
 
 all clean:
@@ -66,4 +66,4 @@ all clean:
 	echo ""; \
 	tput cnorm || true; \
 	echo "Done."
-	@if [ "$@" = clean ]; then rm -rf build faa.egg-info; fi
+	@rm -rf build faa.egg-info src/faa.egg-info
