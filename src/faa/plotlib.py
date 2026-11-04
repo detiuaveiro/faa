@@ -143,11 +143,11 @@ def save(fig, name: str) -> None:
         _fill_output(fig)
 
 
-def save_png(fig, name: str, dpi: int = 200) -> Path:
-    """Write assets/figures/quiz/<name>.png (white background, 200 dpi) for a quiz question and close the figure.
+def save_png(fig, name: str, subdir: str = "quiz", dpi: int = 200) -> Path:
+    """Write assets/figures/<subdir>/<name>.png (white background, 200 dpi) for a quiz question and close the figure.
 
     Moodle shows the image through an <img> link to raw.githubusercontent.com, so the file must be a PNG that is committed."""
-    out = ROOT / "assets" / "figures" / "quiz"
+    out = ROOT / "assets" / "figures" / subdir
     out.mkdir(parents=True, exist_ok=True)
     fig.savefig(out / f"{name}.png", dpi=dpi, facecolor="white", bbox_inches="tight", pad_inches=0.05)
     plt.close(fig)
