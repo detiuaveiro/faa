@@ -143,6 +143,17 @@ def save(fig, name: str) -> None:
         _fill_output(fig)
 
 
+def save_png(fig, name: str, dpi: int = 200) -> Path:
+    """Write assets/figures/quiz/<name>.png (white background, 200 dpi) for a quiz question and close the figure.
+
+    Moodle shows the image through an <img> link to raw.githubusercontent.com, so the file must be a PNG that is committed."""
+    out = ROOT / "assets" / "figures" / "quiz"
+    out.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out / f"{name}.png", dpi=dpi, facecolor="white", bbox_inches="tight", pad_inches=0.05)
+    plt.close(fig)
+    return out / f"{name}.png"
+
+
 def score_board(values: dict, rows, columns, colours: dict, higher: bool = True, left: float = 0.125):
     """Grid of scores: `values[(row, column)]`; a missing cell stays grey, so one layout can fill up from figure to
     figure. Bold marks the best score of a row; the colour of a cell is its distance to that best score."""
