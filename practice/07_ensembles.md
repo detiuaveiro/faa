@@ -4,7 +4,7 @@ title: "Lab 07 — Ensemble Models, Built from Scratch"
 
 # Overview
 
-**Class 07 · Topic 6.** Lecture: `slides/07_ensembles.pdf`. Demo notebooks in `notebooks/07-ensembles/`: `01_decision_boundaries.ipynb`, `02_bagging_forests.ipynb`, `03_boosting.ipynb` and `04_stacking_and_choice.ipynb`.
+**Class 07 · Topic 6.** Lecture: `slides/07_ensembles.pdf`. Demo notebooks in `notebooks/07-ensembles/`: `01_shallow_models.ipynb`, `02_voting.ipynb`, `03_bagging_forests.ipynb`, `04_boosting.ipynb`, `05_stacking_neural.ipynb`, `06_tuning.ipynb` and `07_real_tables.ipynb`.
 
 **Notebook for this lab:** `notebooks/07-ensembles/lab07_ensembles.ipynb`, with helpers in `lab07_utils.py` (same folder, do not edit). Cells marked **TODO** contain `raise NotImplementedError`: replace it with your code. Every other cell is ready, and it draws the plots and prints the comparisons once your functions work.
 
@@ -17,7 +17,7 @@ title: "Lab 07 — Ensemble Models, Built from Scratch"
 By the end of the lab you should be able to:
 
 1. Combine members by a hard and a soft vote and say when a vote cannot help.
-2. Draw bootstrap samples, bag trees, read the out-of-bag error and see what `max_features` changes.
+2. Draw bootstrap samples, bag trees, read the out-of-bag MCC and see what `max_features` changes.
 3. Write AdaBoost with stumps: the weighted error, the member weight $\beta_b$ and the weight update.
 4. Fit gradient boosting by residuals, and choose the shrinkage and the number of trees on validation data.
 5. Build a stack on out-of-fold predictions and show the leak of in-fold predictions.
@@ -25,7 +25,7 @@ By the end of the lab you should be able to:
 | Part | Task | twin | Time |
 |:--|:--|:--|:-:|
 | A | The gallery on the moons: hard vote and soft vote | `VotingClassifier` | 12 min |
-| B | Bagging by hand: bootstrap, vote, out-of-bag error, `max_features` | `BaggingClassifier`, `RandomForestClassifier` | 15 min |
+| B | Bagging by hand: bootstrap, vote, out-of-bag MCC, `max_features` | `BaggingClassifier`, `RandomForestClassifier` | 15 min |
 | C | AdaBoost with stumps: weights, $\beta_b$, the final vote | `AdaBoostClassifier` | 20 min |
 | D | Gradient boosting: residuals, shrinkage, early stopping | `GradientBoostingRegressor` | 13 min |
 | E | Stacking with out-of-fold predictions and the leak | `StackingClassifier` | home |
@@ -57,13 +57,13 @@ Implement `hard_vote(labels)` (shape `(B, n)`, one row of 0/1 labels per member;
 
 A bootstrap sample draws $n$ examples with replacement: about 63.2 % of the distinct examples are in, 36.8 % are **out of bag**.
 
-## B1. Bootstrap, bagging, OOB error
+## B1. Bootstrap, bagging, OOB MCC
 
-Implement `bootstrap_indices(n, rng)`, `fit_bagging(X, y, n_trees, seed, max_features)` (one `DecisionTreeClassifier` per sample, and which examples each tree saw), `predict_bagging(trees, X)` (the mean probability) and `oob_error(trees, inbag, X, y)` (each example predicted only by the trees that did not see it). The driver compares 100 of your trees with `BaggingClassifier` and `RandomForestClassifier`, then sweeps `max_features` on 20 correlated features.
+Implement `bootstrap_indices(n, rng)`, `fit_bagging(X, y, n_trees, seed, max_features)` (one `DecisionTreeClassifier` per sample, and which examples each tree saw), `predict_bagging(trees, X)` (the mean probability) and `oob_mcc(trees, inbag, X, y)` (each example predicted only by the trees that did not see it). The driver compares 100 of your trees with `BaggingClassifier` and `RandomForestClassifier`, then sweeps `max_features` on 20 correlated features.
 
 1. Is the unique share close to $1 - 1/e$? Why?
-2. How do your OOB and test errors compare with the two twins? Why do they not agree to the last digit?
-3. Which `max_features` has the lowest OOB error, and how much better is it than plain bagging?
+2. How do your OOB and test MCC compare with the two twins? Why do they not agree to the last digit?
+3. Which `max_features` has the highest OOB MCC, and how much better is it than plain bagging?
 
 # Part C — AdaBoost with Stumps
 
@@ -75,7 +75,7 @@ Implement `fit_adaboost(X, y, n_rounds)`: weights start at $1/n$; each round fit
 
 1. In the ten-point example, which points gain weight after round 1, and by how much? Is the final vote right on all ten?
 2. How close is your ensemble to `AdaBoostClassifier`? The library reports $\beta$ twice as large as yours: why does the vote not change?
-3. Does the test error keep falling with more rounds? What would you use to choose the number of rounds?
+3. Does the test MCC keep rising with more rounds? What would you use to choose the number of rounds?
 
 # Part D — Gradient Boosting for Regression
 
@@ -83,10 +83,10 @@ Gradient boosting adds trees that fit the **residuals**: $F_b = F_{b-1} + \eta\,
 
 ## D1. Residuals, shrinkage, early stopping
 
-Implement `fit_gbr(X, y, n_trees, eta, depth)`, `predict_gbr(model, X, n_trees)` and `best_rounds(model, X_val, y_val)` (the number of trees with the lowest validation RMSE). The driver compares with `GradientBoostingRegressor` and sweeps $\eta$.
+Implement `fit_gbr(X, y, n_trees, eta, depth)`, `predict_gbr(model, X, n_trees)` and `best_rounds(model, X_val, y_val)` (the number of trees with the lowest validation MAE). The driver compares with `GradientBoostingRegressor` and sweeps $\eta$.
 
 1. How close is your model to `GradientBoostingRegressor`? Why can they agree to rounding error?
-2. How does the best number of trees change with $\eta$, and what happens to the test RMSE at 300 trees when $\eta$ is 1?
+2. How does the best number of trees change with $\eta$, and what happens to the test MAE at 300 trees when $\eta$ is 1?
 3. What does the model predict outside the training range, and why?
 
 # Part E — Stacking with Out-of-Fold Predictions
@@ -98,7 +98,7 @@ A **stack** feeds the predictions of the members to a meta-learner. In-fold pred
 Implement `out_of_fold(make_model, X, y, k, seed)`, `fit_stack(makers, X, y, k, seed, leak)` and `predict_stack(stack, X)`. The members are 1-NN, a tree and an SVM on the moons; the driver compares the leaking and the out-of-fold stack with `StackingClassifier`.
 
 1. Which meta weights are large in the leaking stack and which in the out-of-fold stack? Which member does the leak over-trust?
-2. Does the leak change the test accuracy a lot on the moons? Which number shows it most clearly?
+2. Does the leak change the test MCC a lot on the moons? Which number shows it most clearly?
 3. How close is your out-of-fold stack to `StackingClassifier`?
 
 # Part F — Challenge: Pseudo-Residuals with `jax.grad`

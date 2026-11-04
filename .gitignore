@@ -238,3 +238,9 @@ GEMINI.md
 .windsurfrules
 .clinerules
 .continue/
+
+# dependencies come from pyproject.toml with pip install -e . (README)
+uv.lock
+
+# Moodle question banks (GIFT, EN and PT; exam files must not be published)
+evaluation/

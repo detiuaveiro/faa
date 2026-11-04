@@ -176,14 +176,16 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 
 | Block | Contents | Demo notebook |
 |:--|:--|:--|
-| One model is a guess | Gallery of ten models on the moons, on four other sets and on two real tables in two dimensions, the regression twin (a sine and house value against income), disagreement, the ceiling of the problem | [`01_decision_boundaries.ipynb`](notebooks/07-ensembles/01_decision_boundaries.ipynb) — **E1** |
-| Why combining helps, voting | Condorcet, the variance of an average of correlated errors, the ambiguity identity, hard, soft and weighted votes, failure cases | [`02_bagging_forests.ipynb`](notebooks/07-ensembles/02_bagging_forests.ipynb) — **E2** |
-| Bagging and random forests | Bootstrap (63.2 %), out-of-bag error, `max_features` and the correlation of trees, bias and variance, importances, a stable learner | [`02_bagging_forests.ipynb`](notebooks/07-ensembles/02_bagging_forests.ipynb) — **E3** |
-| Boosting | AdaBoost (weights, member weight), margins, gradient boosting by residuals, shrinkage, early stopping, HistGB, XGBoost, LightGBM, label noise | [`03_boosting.ipynb`](notebooks/07-ensembles/03_boosting.ipynb) — **E4** |
-| Stacking | Meta-learner, out-of-fold predictions, the leak, blending | [`04_stacking_and_choice.ipynb`](notebooks/07-ensembles/04_stacking_and_choice.ipynb) — **E5** |
-| Using ensembles | Real data with the Class 01 protocol, calibration, which ensemble when | [`04_stacking_and_choice.ipynb`](notebooks/07-ensembles/04_stacking_and_choice.ipynb) — **E5b** |
+| Shallow models | MCC and MAE; frontiers of six shallow models on six planes, curves on six function families, the tables, bias, variance and overlapping errors | [`01_shallow_models.ipynb`](notebooks/07-ensembles/01_shallow_models.ipynb) — **E1** |
+| Why combining helps, voting | Condorcet, the variance of an average of correlated errors, the ambiguity identity, hard, soft and weighted votes, k-NN as a vote, failure cases | [`02_voting.ipynb`](notebooks/07-ensembles/02_voting.ipynb) — **E2** |
+| Bagging | Bootstrap (63.2 %), out-of-bag score, random forests, `max_features` and the correlation of trees, bias and variance, importances, a stable learner | [`03_bagging_forests.ipynb`](notebooks/07-ensembles/03_bagging_forests.ipynb) — **E3** |
+| Boosting | AdaBoost (weights, member weight), margins, gradient boosting by residuals, shrinkage, early stopping, HistGB, XGBoost, LightGBM, label noise | [`04_boosting.ipynb`](notebooks/07-ensembles/04_boosting.ipynb) — **E4** |
+| Meta models | Stacking, out-of-fold predictions, the leak, blending; neural stacking (two frozen networks and a head) | [`05_stacking_neural.ipynb`](notebooks/07-ensembles/05_stacking_neural.ipynb) — **E5** |
+| Tuning | Parameters and hyperparameters, grid, random and TPE search with Optuna, pruning, hyperparameter importance, nested cross-validation | [`06_tuning.ipynb`](notebooks/07-ensembles/06_tuning.ipynb) — **E6** |
+| Real tables | Every family tuned on 11 real tables at full size, mean ranks, Friedman test, gain per family | [`07_real_tables.ipynb`](notebooks/07-ensembles/07_real_tables.ipynb) — **E7** |
+| Is the gain real? | McNemar and Cochran's Q, paired permutation test and bootstrap interval, sign test and Wilcoxon for regression, corrected t-test, Friedman, Holm, Bayesian signed-rank | [`08_significance.ipynb`](notebooks/07-ensembles/08_significance.ipynb) — **E8** |
 
-**Data:** synthetic moons, blobs, circles and XOR; breast cancer, heart disease, spam and California housing ([`datasets/`](datasets/)).
+**Data:** generated planes, curves and tables from `sklearn.datasets` and `faa.synthetic`; spambase, wine quality, German credit, breast cancer, heart disease, California housing, abalone, concrete, diabetes and auto mpg ([`datasets/`](datasets/)).
 **Lab:** [`lab07_ensembles.ipynb`](notebooks/07-ensembles/lab07_ensembles.ipynb) (helpers in `lab07_utils.py`): Parts A to D in class (60 minutes), Parts E and F at home; hard and soft vote, bagging with the out-of-bag error, AdaBoost with stumps, gradient boosting with early stopping, stacking with out-of-fold predictions and pseudo-residuals with `jax.grad`; solved and explained in [`solutions/lab07_ensembles_solution.ipynb`](solutions/lab07_ensembles_solution.ipynb).
 
 ---
@@ -256,7 +258,7 @@ Linters, type checkers and hook tools (`ruff`, `basedpyright`, `vulture`, `pre-c
 |:--|:--|
 | `slides/` | Lectures in Pandoc Markdown with inline TikZ figures, compiled to Beamer PDFs (`moloch` theme) |
 | `notebooks/` | Jupyter notebooks, one folder per class |
-| `src/faa/` | The small package every notebook imports (`pip install -e .`): plot style and `plotlib.save` (shows a figure in the notebook and stores the transparent PDF of the slide), data loaders, generated sets, model galleries, boundary and curve panels |
+| `src/faa/` | The small package every notebook imports (`pip install -e .`): notebook setup (`demo`), plot style and `plotlib.save` (shows a figure in the notebook and stores the transparent PDF of the slide), data loaders, generated sets, model galleries, boundary and curve panels |
 | `datasets/` | Real, small datasets as zstd-compressed CSV (`*.csv.zst`, read directly with `polars.read_csv`); sources and columns in `datasets/README.md` |
 | `practice/` | Lab guides in Pandoc Markdown, compiled to A4 PDFs |
 | `solutions/` | Solved lab notebooks with step-by-step explanations (try the lab first) |

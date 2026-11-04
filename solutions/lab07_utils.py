@@ -21,6 +21,7 @@ from sklearn.svm import SVC
 
 from faa import boundaries
 from faa.data import load_heart  # noqa: F401  (re-exported for the notebook)
+from faa.metrics import mae, mcc  # noqa: F401  (re-exported for the notebook)
 
 
 def moons_split(seed: int = 0) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -81,7 +82,7 @@ class _Proba:
 
 def plot_boundaries(models: dict, X_tr, y_tr, X_te, y_te, ncols: int = 4):
     """One panel per fitted model (`faa.boundaries.boundary_panel`): P(class 1) as a blue-white-orange map, the 0.5 contour,
-    train points filled, test points open, test accuracy and log loss under the panel. `models` maps a title to a fitted
+    train points filled, test points open, test MCC under the panel. `models` maps a title to a fitted
     classifier with `predict_proba` (or to a function `X -> P(class 1)`). Returns the figure."""
     nrows = -(-len(models) // ncols)
     fig, axes = plt.subplots(nrows, ncols, figsize=(2.2 * ncols, 2.3 * nrows), squeeze=False)

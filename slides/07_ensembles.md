@@ -5,7 +5,7 @@ bibliography: "references.bib"
 suppress-bibliography: true
 ---
 
-# One Model Is a Guess
+# One Model at a Time
 
 ## Where We Left Off
 
@@ -20,150 +20,225 @@ suppress-bibliography: true
 \end{center}
 ```
 
-* Until now: **one** learner, tuned
-* Today: several learners **decide together**
+* Until now: **one** model, tuned
+* Today: first see where one model fails, then combine models
 
 ## Roadmap of the Class
 
-| Part | Question | Answer |
-|:-------------------------|:---------------------------|:----------------------------|
-| **One model is a guess** | do good models agree? | no: the gallery |
-| **Why combining helps** | when does a crowd win? | independent, diverse errors |
-| **Voting** | how to combine? | hard, soft, weighted vote |
-| **Bagging, forests** | how to cut variance? | bootstrap, average |
-| **Boosting** | how to cut bias? | fix the errors in turn |
-| **Stacking** | how to learn the mix? | a meta-learner |
-| **Using ensembles** | which one, at what cost? | a protocol and a table |
+| Part | Question | Methods |
+|:-------------------------|:--------------------------------|:---------------------------------|
+| **Shallow models** | where does one model fail? | six models, 17 sets |
+| **Why combining helps** | when does a crowd win? | majority, mean |
+| **Voting** | how to combine by hand? | hard, soft, weighted, k-NN |
+| **Bagging** | how to cut variance? | bagged trees, random forest |
+| **Boosting** | how to cut bias? | AdaBoost, gradient boosting |
+| **Meta models** | how to learn the mix? | stacking, neural stacking |
+| **Tuning** | how to set the knobs? | random search, Optuna |
+| **Real tables** | which family wins? | 11 tables, ranks |
+| **Is the gain real?** | is it luck? | McNemar, permutation, Wilcoxon |
+
+<!-- defines: ensemble, member, shrinkage, variance, weighted -->
 
 ## Notation N7: Members
 
 Each symbol is new in this class; earlier symbols keep their meaning.
 
 | symbol | meaning | shape | example |
-|:----------|:-------------------------|:------:|:-------------------|
+|:----------------------|:--------------------------------------|:-----------:|:------------------|
 | $B$ | number of members | scalar | $B = 100$ trees |
 | $b$ | index of a member or round | scalar | $b = 1,\dots,B$ |
 | $\hat f_b$ | member $b$ | function | one tree |
 | $\hat f_{\text{ens}}$ | the ensemble | function | the vote |
 | $\hat p_b(k \mid x)$ | probability member $b$ gives to class $k$ | scalar | $0.8$ |
+| $u_b$ | weight of member $b$ in a vote | scalar | $0.316$ |
 | $\eta$ | shrinkage (the learning rate of Class 02) | scalar | $0.1$ |
-
-<!-- defines: ensemble, member, shrinkage, variance, weighted -->
 
 ## Notation N7b: Voters, Variance, Weights
 
 | symbol | meaning | shape | example |
-|:----------|:-------------------------|:------:|:-------------------|
-| $\gamma$ | accuracy of one voter ($p$ in the plot) | scalar | $0.6$ |
-| $a_B$ | accuracy of the majority of $B$ voters | scalar | $a_3 = 0.648$ |
+|:----------------|:--------------------------------------------|:---------:|:---------------------|
+| $\gamma$ | chance that one voter is right | scalar | $0.6$ |
+| $a_B$ | chance that the majority of $B$ voters is right | scalar | $a_3 = 0.648$ |
 | $v$, $V_B$ | variance of one member, of the mean of $B$ | scalar | $V_5 = 0.680$ |
 | $\rho$ | correlation of two members' errors | scalar | $\rho = 0.6$ |
 | $\xi$ | share of examples left out of a bootstrap sample | scalar | $0.368$ |
 | $w_i^{(b)}$ | weight of example $i$ in round $b$ | scalar | $1/n$ at the start |
 | $\text{err}_b$ | weighted error of member $b$ | scalar | $0.20$ |
-| $\beta_b$ | weight of member $b$ in the vote | scalar | $0.693$ |
+| $\beta_b$ | weight of member $b$ in AdaBoost | scalar | $0.693$ |
 | $E_b$, $Z_b$ | exponential loss of member $b$, weight normaliser | scalar | $0.800$ |
-| $n$ | number of examples (Class 01) | scalar | $210$ |
-| $x_i$ | example $i$ (Class 01) | vector | one moons point |
+
+## Notation N7c: Examples and Meta Models
+
+| symbol | meaning | shape | example |
+|:--------------|:-------------------------------------|:-----------:|:----------------------------|
+| $n$ | number of examples (Class 01) | scalar | $600$ |
+| $x_i$ | example $i$ (Class 01) | vector | one point of a plane |
 | $y_i$ | targets (Class 01) | scalar | $+1$ or $-1$ |
+| $\hat y$ | prediction | scalar | $0.8$ |
+| $z_A$ | last hidden layer of network A | vector | 128 values |
+| $z_B$ | last hidden layer of network B | vector | 64 values |
 
-## The Moons: One Running Example
+<!-- defines: MCC, MAE -->
 
-Two interleaved half-circles with noise: easy to draw, hard to separate with a line.
+## Notation N7d: Scores
 
-* $n = 300$ points, noise $0.3$, stratified 70/30 split
-* Train 210 points (105 per class), test 90 (45 per class): **one test point is 0.011**
-* Best possible accuracy (k-NN on 40 000 moons): about **0.92**
-* Every number in this class comes from the demo notebooks (E1 to E5)
+| symbol | meaning | shape | example |
+|:--------------------|:-------------------------------------------|:------------:|:----------------|
+| $TP$ | confusion-matrix counts (Class 01) | scalar | $30$ |
+| $TN$ | confusion-matrix counts (Class 01) | scalar | $50$ |
+| $FP$ | confusion-matrix counts (Class 01) | scalar | $10$ |
+| $FN$ | confusion-matrix counts (Class 01) | scalar | $10$ |
+| $G$ | the product under the root of MCC | scalar | $5760000$ |
+| $\text{MCC}$ | Matthews correlation coefficient | scalar | $0.583$ |
 
-## Ten Models, One Task
+## Shallow Models
 
-Each panel: the probability map of one model; filled points train, open points test.
+A **shallow model** is one fitted model that combines nothing.
 
-![](plots/07/e1_gallery_moons.pdf){height=4.3cm}
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cblue, text width=2.9cm] (a) {\textbf{logistic}, or linear\\ Class 03};
+  \node[fillbox=cblue, text width=2.9cm, right=3mm of a] (b) {\textbf{naive Bayes}, or polynomial\\ Classes 03--04};
+  \node[fillbox=cblue, text width=2.9cm, right=3mm of b] (c) {\textbf{tree}, depth 5\\ Class 06};
+  \node[fillbox=cblue, text width=2.9cm, below=3mm of a] (d) {\textbf{1-NN}\\ Class 06};
+  \node[fillbox=cblue, text width=2.9cm, below=3mm of b] (e) {\textbf{SVM}, RBF kernel\\ Class 05};
+  \node[fillbox=cblue, text width=2.9cm, below=3mm of c] (f) {\textbf{MLP}, one hidden layer\\ Class 05};
+\end{tikzpicture}
+\end{center}
+```
 
-* Straight, smooth, staircase and jagged boundaries on the same data
+* Nearest neighbours (NN) with $k > 1$ are left out: k-NN is already a vote
 
-## Reading the Gallery
+## Two Scores: MCC and MAE
 
-Three models on four sets, with the test accuracy under each panel:
+**Matthews correlation** (MCC) for classes, **mean absolute error** (MAE) for values.
 
-![](plots/07/e1_sets.pdf){height=4.3cm}
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cgreen, text width=1.5cm] (tp) {TP = 30};
+  \node[fillbox=cred, text width=1.5cm, right=1mm of tp] (fn) {FN = 10};
+  \node[fillbox=cred, text width=1.5cm, below=1mm of tp] (fp) {FP = 10};
+  \node[fillbox=cgreen, text width=1.5cm, right=1mm of fp] (tn) {TN = 50};
+\end{tikzpicture}
+\end{center}
+```
 
-* Moons test accuracy: logistic 0.756, SVM RBF 0.889, 15-NN 0.956, forest 0.900, boosting 0.922
+<!-- derivation: mcc -->
+$$
+\begin{aligned}
+G &= {\scriptstyle (TP+FP)(TP+FN)(TN+FP)(TN+FN)} && \text{(definition)} \\
+\text{MCC} &= \frac{TP\,TN - FP\,FN}{\sqrt{G}} && \text{(definition)}
+\end{aligned}
+$$
 
-## Does the Ranking Hold?
+* Here: $\sqrt{G} = 2400$, so MCC $= 1400 / 2400 = 0.583$
+* MAE: the mean of $|y_i - \hat y_i|$, in the units of $y$
 
-Five seeds on five sets: the best model changes with the set.
+## Why Not Accuracy?
 
-![](plots/07/e1_gallery_sets.pdf){height=4.3cm}
+:::: {.columns}
+::: {.column width="50%"}
+![](plots/07/e1_scores.pdf)
+:::
+::: {.column width="48%"}
+* A rare class: 0.335 of the points
+* Always negative: accuracy 0.665, MCC 0
+* MCC 1 is perfect, 0 is a coin
+* Errors 0.1, 0.1, 0.1, 0.1, 2: MAE 0.48, root mean squared error (RMSE) 0.90
+:::
+::::
 
-* Mean over 25 runs: SVM 0.901, MLP 0.900, 15-NN 0.897, tree 0.848, logistic 0.717
-* Logistic regression fails on circles (0.46) and XOR (0.54): the bias of a line
+## The Data Sets
 
-## Real Data in Two Dimensions
+Generated sets with default models show **where a model breaks**, not which is best.
 
-Two real tables reduced to two standardised features, so that a boundary can be drawn:
+| group | sets | train |
+|:------------|:-----------------------------------------------------------------|:------------:|
+| planes | moons, circles, XOR, skewed blobs, spiral, checkerboard | 600 |
+| curves | cubic, sine, exponential, chirp, step, sawtooth | 120 |
+| tables | 20 features, Hastie, kinked border, two Friedman sets | 1000 |
 
-![](plots/07/e1_real_boundaries.pdf){height=4.3cm}
+* 10 % flipped labels on four planes: MCC stops at **0.80**
+* Noise of sd 0.10 on the curves: MAE stops at **0.08**
 
-* Breast cancer (worst concave points, worst texture): logistic 0.912, 15-NN 0.906, tree 0.854
-* California map (longitude, latitude; value above the median): logistic 0.733, forest 0.860
+## Curved Data Breaks Straight Frontiers
 
-## One Sample, One Model: Variance
+Colour: probability of class 1. Red frame: best model of the row.
 
-Refit on four bootstrap resamples of the same 210 points:
+![](plots/07/e1_planes_a.pdf)
 
-![](plots/07/e1_variance.pdf){height=4.3cm}
+* Logistic regression: MCC 0.00 on circles, **a line cannot close a loop**
+* 1-NN draws islands around the flipped labels
 
-* Logistic accuracy 0.772 (sd 0.014): stable, but biased
-* Tree 0.892 (sd 0.037): the boundary moves with the sample
-* **Variance** is what averaging removes (Class 01)
+## Two Regions per Class Break the Rest
+
+![](plots/07/e1_planes_b.pdf)
+
+* Exclusive or (XOR): logistic and naive Bayes are at MCC 0.05 and 0.00
+* Spiral: best MCC 0.63, far below the ceiling of 0.80
+* Support vector machine (SVM), multilayer perceptron (MLP): too smooth here
+
+## Small Cells and a Rare Class
+
+![](plots/07/e1_planes_c.pdf)
+
+* Checkerboard: only 1-NN follows the cells (0.75)
+* Skewed blobs: the models are close, 0.64 to 0.80
+
+## The Board of Classification
+
+Mean test MCC of five seeds. Grey cells fill up in the next parts.
+
+![](plots/07/e1_board_c.pdf)
+
+* **Each model has a set that breaks it**; none wins everywhere
+
+## Oscillations Break Global Models
+
+![](plots/07/e1_curves_b.pdf)
+
+* Degree 3 has too few bends: MAE 0.52 on the sine
+* Support vector regression (SVR) misses the fast chirp: MAE 0.46
+
+## Jumps Break Smooth Models
+
+![](plots/07/e1_curves_c.pdf)
+
+* Step: the tree wins with 0.11, smooth models round the corners
+* Sawtooth: **no model is near 0.08**, the best is 1-NN with 0.14
+
+## The Board of Regression
+
+Mean test MAE of five seeds. The colour compares a cell with the best of its row.
+
+![](plots/07/e1_board_r.pdf)
+
+* Friedman 1: polynomial 0.40, the MLP 0.50, 1-NN 2.72
+* The ranking changes from row to row, as in classification
 
 ## Do the Errors Overlap?
 
-![](plots/07/e1c_disagree.pdf){height=4.3cm}
+:::: {.columns}
+::: {.column width="50%"}
+![](plots/07/e1_overlap.pdf)
+:::
+::: {.column width="48%"}
+* 0.317 of the points: right for all six
+* 0.030: wrong for all six
+* **The models disagree on 0.652**
+* That is the room a combination can use
+:::
+::::
 
-* 65 of 90 test points are right for all ten models, 3 wrong for all ten
-* **22 points split the models**: that is room for a combination to help
-* Oracle accuracy 0.967; majority of the ten hard votes 0.900
-
-## DEMO E1: Notebook
-
-`01_decision_boundaries.ipynb` (E1) **shows** the gallery on five sets, the regression twin, disagreement
-
-**Look for:** the noise sweep, the ceiling, real data in 1 and 2 dimensions, and the extrapolation panel
-
-## Regression Twin: Curves and Extrapolation
-
-A noisy sine, trained on $[-3, 3]$ and queried on $[-4.5, 4.5]$: the shaded band is the training range.
-
-![](plots/07/e1b_sine.pdf){height=4.3cm}
-
-* RMSE inside / outside: polynomial 0.092 / 6.764, SVR 0.120 / 0.634, forest 0.197 / 0.632
-* Trees, forests and neighbours go flat outside the data; the polynomial explodes
-
-## Real Data: House Value against Income
-
-California housing, trained on the districts up to the 75th income percentile, queried on all:
-
-![](plots/07/e1b_real.pdf){height=4.3cm}
-
-* RMSE on all districts: linear 0.804, tree 0.972, forest 1.002, polynomial 100.891
-* A real target is noisy and capped: a line is hard to beat, a high-degree polynomial is not usable
-
-## The Ceiling of the Moons
-
-* A combination cannot beat the Bayes ceiling of about **0.92**
-* The best single model (15-NN, 0.956) is lucky on 90 points
-* So the honest claim is: *as good as the best member, better than the average member, with lower variance*
-* Gains show against the tree and on real data (California housing, later)
+## DEMO E1: `01_shallow_models.ipynb`
 
 # Why Combining Helps
 
 ## The Crowd Wins If Voters Are Independent
 
-$B$ voters, each right with probability $\gamma$; the majority is right with the binomial sum.
+$B$ voters, each right with chance $\gamma$; the majority is right with the binomial sum.
 
 ![](plots/07/e2_condorcet.pdf)
 
@@ -181,16 +256,18 @@ a_3 &= \gamma^3 + 3\gamma^2(1-\gamma) && \text{(definition)} \\
 \end{aligned}
 $$
 
-* Three voters: the majority is 3 right or 2 right; $0.216 + 0.432 = 0.648$
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cgreen, text width=2.2cm] (a) {3 right: $0.216$};
+  \node[fillbox=cgreen, text width=2.2cm, right=3mm of a] (b) {2 right: $0.432$};
+  \node[fillbox=cred, text width=2.2cm, right=3mm of b] (c) {1 or 0 right: $0.352$};
+\end{tikzpicture}
+\end{center}
+```
+
 * Assumption: the voters err **independently**
-* Copies do not help: if half the voters copy, $B = 101$ gives $0.790$; all copies stay at $0.600$
-
-## When a Crowd Fails
-
-* **Worse than chance:** $\gamma = 0.45$, $B = 101$ gives $0.156$
-* **Identical members:** three copies of 15-NN vote $0.956$, like one
-* **Shared bias:** three linear members on XOR vote $0.756$, no better
-* A useful member is better than chance **and** different from the others
+* Copies do not help: if half the voters copy, $B = 101$ gives $0.790$
 
 ## Averaging Reduces Variance
 
@@ -204,6 +281,18 @@ V_B &= \frac{B\,v + B(B-1)\,\rho\,v}{B^2} && \text{(definition)} \\
 \end{aligned}
 $$
 
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cblue, text width=1.3cm] (a) {$\hat f_1$};
+  \node[fillbox=cblue, text width=1.3cm, right=2mm of a] (b) {$\hat f_2$};
+  \node[fillbox=cblue, text width=1.3cm, right=2mm of b] (c) {$\hat f_B$};
+  \node[fillbox=corange, text width=2cm, right=8mm of c] (m) {mean: $V_B$};
+  \draw[flow] (c) -- (m);
+\end{tikzpicture}
+\end{center}
+```
+
 * With $v = 1$, $\rho = 0.6$: $B = 5$ gives $0.680$, $B = 50$ gives $0.608$
 
 ## The Floor Is the Correlation
@@ -214,58 +303,101 @@ $$
 * More members cannot remove the shared part $\rho v$
 * **Diverse members matter more than many members**
 
-## The Error of the Mean
-
-Five members on the noisy sine: the mean is never worse than the average member.
-
-* Mean member MSE $0.1084$; spread of the members (ambiguity) $0.0153$
-* MSE of the mean $= 0.1084 - 0.0153 = 0.0931$ (the identity is exact)
-* More **disagreement** among accurate members means a larger gain
-
-## Three Routes
+## Four Families of Ensembles
 
 ```{=latex}
 \begin{center}
 \begin{tikzpicture}[font=\scriptsize]
-  \node[fillbox=cblue, text width=3.1cm] (a) {\textbf{Bagging, forest}\\ parallel members on resamples\\ cut \emph{variance}};
-  \node[fillbox=corange, text width=3.1cm, right=6mm of a] (b) {\textbf{Boosting}\\ members in sequence, each fixes the last\\ cut \emph{bias}};
-  \node[fillbox=cgreen, text width=3.1cm, right=6mm of b] (c) {\textbf{Stacking}\\ a model learns the mix\\ \emph{learn} the combination};
+  \node[fillbox=cblue, text width=4.6cm] (v) {\textbf{Voting}\\ fit different models, combine the outputs};
+  \node[fillbox=cgreen, text width=4.6cm, right=4mm of v] (a) {\textbf{Bagging}\\ one learner on resamples, in parallel: cut \emph{variance}};
+  \node[fillbox=corange, text width=4.6cm, below=4mm of v] (b) {\textbf{Boosting}\\ members in sequence, each fixes the last: cut \emph{bias}};
+  \node[fillbox=cpurple, text width=4.6cm, below=4mm of a] (c) {\textbf{Meta models}\\ a model learns the combination};
 \end{tikzpicture}
 \end{center}
 ```
 
-* The next parts take them in this order; a plain vote comes first
+* Same data, same scores: each family adds a row to the same figures
 
 # Voting
 
-## Hard Vote, Soft Vote
+## Hard Vote, Soft Vote, Weighted Vote
 
-* **Hard vote:** each member names a class; the majority wins
-* **Soft vote:** average the predicted probabilities, take the largest
-* **Weighted:** members with a larger cross-validated accuracy count more
-* For regression: the mean of the predictions
+The members are the **six shallow models**, each fitted on the whole training set.
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cblue, text width=2.8cm] (a) {\textbf{Hard}: each member names a class, the majority wins};
+  \node[fillbox=cgreen, text width=2.8cm, right=3mm of a] (b) {\textbf{Soft}: average the probabilities, take the largest};
+  \node[fillbox=corange, text width=2.8cm, right=3mm of b] (c) {\textbf{Weighted}: a soft vote, better members count more};
+\end{tikzpicture}
+\end{center}
+```
+
+* Regression: the **median** plays the hard vote, the **mean** the soft vote
 
 <!-- derivation: soft-vote -->
 $$
 \begin{aligned}
-\hat f_{\text{ens}}(x) &= \arg\max_k \frac1B \sum_b \hat p_b(k \mid x) && \text{(definition)}
+\hat f_{\text{ens}}(x) &= \arg\max_k \sum_b u_b\, \hat p_b(k \mid x) && \text{(definition)}
 \end{aligned}
 $$
 
-## Voting in Action
+## Where the Weights Come From
 
-![](plots/07/e2_voting.pdf){height=4.3cm}
+$u_b$: the MCC of member $b$ in 5-fold cross-validation on the training set, floored at 0.
 
-* Logistic 0.756, 15-NN 0.956, SVM 0.889: hard, soft and weighted vote all 0.889
-* Log loss: hard 0.435, soft 0.288, weighted 0.284: **soft is better calibrated**
+![](plots/07/e2_weights.pdf)
 
-## DEMO E2: Notebook
+* Spiral: 1-NN gets 0.316, logistic 0.082; dotted: equal votes
+* Regression: $u_b$ is the inverse of the cross-validated MAE
 
-`02_bagging_forests.ipynb` (E2) **shows** hard, soft and weighted votes, and the failure cases
+## k-NN Is a Vote
 
-**Look for:** XOR, copies of one model, and ten seeds
+k-NN with $k > 1$ is a vote of the $k$ nearest points: each neighbour is one voter.
 
-# Bagging and Random Forests
+![](plots/07/e2_knn.pdf)
+
+* Spiral: $k = 1$ gives 0.635, $k = 15$ gives **0.802**, $k = 101$ gives 0.082
+* **Weighted k-NN:** a closer neighbour counts more
+* Too many neighbours vote across the frontier
+
+## Voting on the Spiral
+
+The vote panels say which shallow models they use.
+
+![](plots/07/e2_gallery_spiral.pdf)
+
+* 15-NN follows the spiral and ignores the flipped labels (0.80)
+* The soft vote (0.65) beats each member
+
+## Voting Fills Five Columns
+
+![](plots/07/e2_board_c.pdf)
+
+* Spiral 0.802, skewed blobs 0.817, moons 0.780: new best scores
+* Tables: the votes stay below the SVM
+
+## Is the Voting Gain Real?
+
+Gain: best voter minus best shallow model. Green: won on all five seeds.
+
+![](plots/07/e2_gain_c.pdf)
+
+* **Four wins of nine:** spiral $+0.167$, checkerboard $+0.039$, skewed blobs $+0.030$, moons $+0.023$
+* Circles and XOR sit at the ceiling: nothing is left to gain
+
+## Voting in Regression
+
+![](plots/07/e2_board_r.pdf)
+
+* The MLP is at the floor on smooth curves: the vote can only lose
+* Only the sawtooth gains: 5-NN by distance 0.132 against 0.142
+* **A vote cannot beat a member that is already right**
+
+## DEMO E2: `02_voting.ipynb`
+
+# Bagging
 
 ## The Bootstrap Sample
 
@@ -283,7 +415,7 @@ To get $B$ different training sets from one, draw $n$ examples **with replacemen
 \end{center}
 ```
 
-* Each sample holds about two thirds of the distinct examples (next frame)
+* Each sample holds about two thirds of the distinct examples
 
 ## How Many Distinct Examples?
 
@@ -295,80 +427,62 @@ $$
 \end{aligned}
 $$
 
-* $\xi$: all $n$ draws miss example $i$; numerically $\xi = e^{-1} = 0.368$, so each example is present with probability $1-\xi = 0.632$
-* Check: unique share $0.657$ ($n = 10$), $0.638$ (50), $0.633$ (210), $0.632$ (10 000)
-* The $0.368$ left out is the **out-of-bag** (OOB) set of that member
+![](plots/07/e3_share.pdf)
 
-## Bagging in Five Lines
+* $\xi = 0.368$: all $n$ draws miss example $i$
+* That left-out share is the **out-of-bag** (OOB) set of the member
 
-1. For $b = 1,\dots,B$: draw a bootstrap sample $D_b$ from $D$
-2. Fit a deep tree $\hat f_b$ on $D_b$
-3. Classify by the majority vote of $\hat f_1,\dots,\hat f_B$ (regression: the mean)
-4. A deep tree has low bias and high variance: the average keeps the first and cuts the second
-5. Members are trained independently: they can run in parallel
+## Bagging in Action: the Checkerboard
 
-## Bagging in Action: Trees Added One by One
+![](plots/07/e3_bagging.pdf)
 
-![](plots/07/e3_bagging.pdf){height=4.3cm}
-
-* One tree 0.878; $B = 1, 3, 10, 100$: test 0.900, 0.900, 0.956, 0.933
-* Log loss falls from $0.692$ to $0.336$: the boundary becomes smooth
+* One deep tree 0.72; $B = 3, 10, 100$: MCC 0.81, 0.82, 0.82
+* `BaggingClassifier` with 100 trees: 0.830; by hand: 0.819
 
 ## Variance Cut, Bias Kept
 
-Bias and variance over 200 training sets (ten correlated features, noise $0.25$):
+The decomposition needs the squared error: 200 training sets, noise $0.25$.
 
 ![](plots/07/e3_biasvar.pdf){height=4.3cm}
 
-* One tree: bias$^2$ 0.105, variance 1.038, MSE 1.393
-* Bagged: 0.131, 0.140, 0.521; forest ($m = 5$): 0.125, 0.097, 0.472
+* One tree: bias$^2$ 0.105, variance 1.038
+* Bagged: 0.131, 0.140; forest ($m = 5$): 0.125, 0.097
 * Variance falls by a factor 7; the bias barely moves
 
-## Out-of-Bag Error: Free Validation
+## Out-of-Bag Score: Free Validation
 
-* Each tree never saw about $0.368$ of the examples
-* Predict each example with the trees that did **not** train on it
+Predict each example with the trees that did **not** train on it.
 
-![](plots/07/e3_oob.pdf){height=4.3cm}
+![](plots/07/e3_oob.pdf)
 
-* Error at $B = 1, 10, 100$: OOB 0.144, 0.139, 0.116; test 0.146, 0.116, 0.114
+* $B = 5, 10, 100$: OOB 0.699, 0.735, 0.775; test 0.789, 0.798, 0.803
+* OOB is **pessimistic**: each vote uses a third of the trees
 
 ## From Bagging to a Random Forest
 
-Bagged trees are still correlated: they all pick the same strong feature first.
+Bagged trees are correlated: they all pick the same strong feature first.
 
-* **Random forest:** at every split consider only $m$ of the $d$ features, drawn at random
-* Smaller $m$ lowers $\rho$, so lowers the floor $\rho v$; too small $m$ makes each tree weak
+**Random forest:** at each split consider only $m$ of the $d$ features.
 
-![](plots/07/e3_maxfeat.pdf){height=4.3cm}
+![](plots/07/e3_maxfeat.pdf){height=3.2cm}
 
-## The Few Hyperparameters
+* $m = 1$: $\rho = 0.110$, 0.707; $m = 10$: 0.768; $m = 20$: $\rho = 0.277$, 0.746
 
-* **Members $B$:** more never hurts; stop when the OOB error is flat
-* **`max_features`:** $\sqrt d$ for classification, a third of $d$ for regression, then tune
-* **`min_samples_leaf`:** larger leaves smooth the prediction
-* Hand-made 100 trees: test 0.933 (OOB 0.933); `RandomForestClassifier` 0.900 (OOB 0.914)
-* The two differ by chance on 90 points, not by a different method
+## Bagging Joins the Gallery
 
-## Feature Importance, Two Ways
+![](plots/07/e3_gallery_checker.pdf)
 
-![](plots/07/e3_importance.pdf){height=3.8cm}
+* Bagged trees reach **0.83**, the best so far: squares suit straight cuts
 
-* A random continuous column: impurity $0.088$, permutation $0.014$
-* Noise share $14.1\,\%$ against $7.4\,\%$; a copy of a feature **splits** the credit
+## Bagging Fills Two Columns
 
-## Limits of Bagging
+![](plots/07/e3_board_c.pdf)
 
-* A **stable** learner gains nothing: 15-NN $0.902 \to 0.897$; a tree gains: $0.863 \to 0.883$
-* A forest cannot extrapolate: outside the data it stays flat (Class 06)
+* Checkerboard: bagged trees 0.818 against 15-NN by distance 0.789
+* Spiral: 0.727 at most, below 15-NN (0.802)
+* Hastie: trees stay near 0.70, the SVM has 0.902
 
-![](plots/07/e1b_extrap.pdf){height=4.3cm}
-
-## DEMO E3: Notebook
-
-`02_bagging_forests.ipynb` (E3) **shows** bootstrap, OOB, $\rho$ against $m$, bias and variance
-
-**Look for:** `max_features`, 200 resamples, and bagging a stable learner
+## DEMO E3: `03_bagging_forests.ipynb`
 
 # Boosting
 
@@ -393,15 +507,14 @@ Train a weak model, find what it gets wrong, make those examples count more, tra
 
 ## AdaBoost on Ten Points: Round 1
 
-Ten points of `make_moons(10, noise=0.2)`; every weight starts at $w_i^{(1)} = 1/10$.
+Ten points; every weight starts at $w_i^{(1)} = 1/10$.
 
-* Stump $x_1 \le 0.053$ gets points 2 and 4 wrong: $\text{err}_1 = 0.2$
-* Member weight $\beta_1 = 0.693$ (next two frames)
-* Wrong points: weight $0.10 \to 0.25$; the others $0.10 \to 1/16$
+![](plots/07/e4_weights.pdf){height=2.6cm}
+
+* Stump $x_1 \le 0.053$ misses points 2 and 4: $\text{err}_1 = 0.2$
+* Wrong points: $0.10 \to 0.25$; the others $0.10 \to 1/16$
 
 ## The Member Weight
-
-We minimise the loss $E_b$ of adding member $b$ with weight $\beta_b$ (right: $e^{-\beta_b}$, wrong: $e^{\beta_b}$).
 
 <!-- derivation: beta -->
 $$
@@ -412,8 +525,9 @@ e^{2\beta_b} &= \frac{1-\text{err}_b}{\text{err}_b} && \text{(set the derivative
 \end{aligned}
 $$
 
-* $\text{err}_1 = 0.2$: $\beta_1 = \tfrac12\ln 4 = 0.693$; the loss falls to $E_1 = 0.800$
-* `AdaBoostClassifier` reports $\ln\frac{1-\text{err}}{\text{err}}$: **twice** our $\beta$ (1.609 against 0.805)
+![](plots/07/e4_beta.pdf){height=1.9cm}
+
+* $\text{err}_1 = 0.2$: $\beta_1 = \tfrac12\ln 4 = 0.693$, $E_1 = 0.800$
 
 ## The Weight Update
 
@@ -424,33 +538,36 @@ w_i^{(b+1)} &= \frac{w_i^{(b)}\,e^{-\beta_b\, y_i\, \hat f_b(x_i)}}{Z_b} && \tex
 \end{aligned}
 $$
 
-* $Z_b$ makes the weights sum to 1; right points shrink, wrong points grow
-* Labels $y_i, \hat f_b(x_i) \in \{-1,+1\}$; round 1: $Z = 0.800$, wrong $\to 0.25$, right $\to 1/16$
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cgreen, text width=3cm] (a) {right point: weight shrinks};
+  \node[fillbox=cred, text width=3cm, right=4mm of a] (b) {wrong point: weight grows};
+\end{tikzpicture}
+\end{center}
+```
+
+* $Z_b$ makes the weights sum to 1; labels $y_i, \hat f_b(x_i) \in \{-1,+1\}$
 * Round 2: $\text{err}_2 = 0.125$, $\beta_2 = 0.973$; round 3: $0.214$, $0.650$
-* The final vote $\operatorname{sign}\sum_b \beta_b \hat f_b(x)$ is right on 10 of 10
+* The vote $\operatorname{sign}\sum_b \beta_b \hat f_b(x)$ is right on 10 of 10
 
-## AdaBoost in Action: Weights and Boundary
+## AdaBoost in Action: the Circles
 
-![](plots/07/e4_adaboost.pdf){height=4.3cm}
+Red rings: the weight of each point.
 
-* After rounds 1, 2, 5, 50: test accuracy 0.744, 0.744, 0.844, 0.889
-* The largest weight grows from $3\times$ to $13.8\times$ the starting $1/n$
+![](plots/07/e4_adaboost.pdf)
+
+* After rounds 1, 2, 5, 50: test MCC 0.28, 0.28, 0.58, 0.72
+* The largest weight reaches 4.8 times the starting $1/n$
 * Hand-made and `AdaBoostClassifier` agree on every test point
 
 ## More Rounds: When to Stop
 
-![](plots/07/e4_rounds.pdf){height=4.3cm}
+![](plots/07/e4_rounds.pdf)
 
-* Stumps: best error $0.099$ at 58 rounds, $0.113$ at 300 (train error $0.018$)
-* Depth-3 members: best $0.097$ at 12 rounds, then $0.114$ with train error $0$
+* Stumps: test MCC 0.754 at 300 rounds, train 0.790
+* Depth 3: best 0.743 at 10 rounds, then 0.689 with train 0.991
 * Boosting **can overfit**: the rounds are a hyperparameter
-
-## Margins Keep Growing
-
-![](plots/07/e4_margin.pdf){height=4.3cm}
-
-* Share of points with margin $\le 0$: $0.100$ ($B = 5$), $0.057$ (50), $0.000$ (300)
-* The vote gets more confident on the training points, even after the error is 0
 
 ## Gradient Boosting: Fit the Residuals
 
@@ -459,74 +576,31 @@ Think of adding a member as a **step of gradient descent in the space of functio
 * Start from a constant $F_0$ (the mean)
 * Squared loss: the negative gradient is the residual $r_i = y_i - F_{b-1}(x_i)$
 * Fit a small tree $\hat f_b$ to the residuals; set $F_b = F_{b-1} + \eta\,\hat f_b$
-* Eight points, $\eta = 0.5$, stumps: MSE $0.461 \to 0.372 \to 0.337$
+* Eight points, $\eta = 0.5$, stumps: mean squared error (MSE) $0.461 \to 0.372 \to 0.337$
 
-## Residuals Shrink Round by Round
+## Boosting Joins the Gallery
 
-![](plots/07/e4_residuals.pdf){height=4.3cm}
+Spiral, one seed: the row of trees now has five panels.
 
-* 100 trees of depth 2, $\eta = 0.1$: test RMSE $0.708, 0.671, 0.645, 0.563, 0.448, 0.190, 0.172$ after $0, 1, 2, 5, 10, 30, 100$ rounds
-* The hand-made version equals `GradientBoostingRegressor` to $10^{-15}$
+![](plots/07/e4_gallery_spiral.pdf)
 
-## Another Loss, Another Residual
+* Trees reach 0.68 to 0.73: staircases on a round frontier
+* 15-NN stays the best (0.80)
 
-For the logistic loss the negative gradient is $y_i - \hat p_i$, the label minus the predicted probability.
+## Boosting Fills Three Columns
 
-* Computed with `jax.grad` (Class 02): it matches $y - \hat p$ to $3\times10^{-7}$
-* So one algorithm covers regression and classification: only the gradient changes
-* This is the idea behind XGBoost, LightGBM, CatBoost
+![](plots/07/e4_board_r.pdf)
 
-## Shrinkage and Number of Trees
+* Step: AdaBoost 0.108 wins; sawtooth: gradient boosting 0.130
+* Friedman kinks: XGBoost 1.05, the MLP 0.73
 
-![](plots/07/e4_lr_grid.pdf){height=4.3cm}
+## DEMO E4: `04_boosting.ipynb`
 
-* $\eta = 1$: best $0.241$ at 3 trees, $0.301$ at 500 (overfit)
-* $\eta = 0.1$: best $0.169$ at 31 trees; $\eta = 0.01$: $0.170$ at 315
-* Smaller $\eta$ needs more trees and gives a slightly better minimum
-
-## Early Stopping
-
-![](plots/07/e4_early.pdf){height=4.3cm}
-
-* Heart disease, $\eta = 0.1$: validation log loss minimal at 19 trees ($0.509$)
-* At 400 trees validation is $1.377$ and test $1.057$
-* `n_iter_no_change = 10` stops at 32 trees on average; test accuracy $0.811$ against $0.798$
-
-## Fast Libraries
-
-| library | fit time | test RMSE |
-|:--------------------|:-----:|:-----:|
-| `GradientBoosting` | about 10 s | 0.505 |
-| `HistGradientBoosting` | 140 ms | 0.499 |
-| XGBoost | 90 ms | 0.501 |
-| LightGBM | 60 ms | 0.505 |
-
-* California housing, 16 512 rows, 200 trees; times are typical, not exact
-* Histogram splits and leaf-wise growth make them 70 to 150 times faster
-* CatBoost adds ordered target encoding of categories (Class 06)
-
-## Boosting Against Bagging
-
-| | bagging, forest | boosting |
-|:-----------------|:-------------------|:-------------------|
-| members | deep, in parallel | shallow, in sequence |
-| cuts | variance | bias |
-| label noise | robust | amplifies it |
-| tuning | few knobs | rounds, $\eta$, depth |
-
-* Label noise 30 %: forest $0.947 \to 0.800$; AdaBoost stumps $0.948 \to 0.848$; depth 3 $0.943 \to 0.770$
-
-## DEMO E4: Notebook
-
-`03_boosting.ipynb` (E4) **shows** weights, margins, residuals, shrinkage, early stopping
-
-**Look for:** the learning-rate grid, label noise, and fit times
-
-# Stacking
+# Meta Models
 
 ## Learn the Combination
 
-A **meta-learner** takes the members' predictions as its features.
+A **meta model** takes the outputs of the members as its features.
 
 ```{=latex}
 \begin{center}
@@ -534,100 +608,362 @@ A **meta-learner** takes the members' predictions as its features.
   \node[fillbox=cblue, text width=1.8cm] (a) {1-NN};
   \node[fillbox=cblue, text width=1.8cm, below=2mm of a] (b) {tree};
   \node[fillbox=cblue, text width=1.8cm, below=2mm of b] (c) {SVM};
-  \node[fillbox=corange, text width=2.2cm, right=14mm of b] (m) {meta-learner\\ logistic regression};
+  \node[fillbox=corange, text width=2.2cm, right=14mm of b] (m) {meta model\\ logistic regression};
   \node[fillbox=cgreen, text width=1.6cm, right=10mm of m] (o) {$\hat y$};
   \draw[flow] (a.east) -- (m.west); \draw[flow] (b.east) -- (m.west); \draw[flow] (c.east) -- (m.west); \draw[flow] (m) -- (o);
 \end{tikzpicture}
 \end{center}
 ```
 
-* The meta-learner can learn that the SVM deserves more trust than the tree
+* This is **stacking**: the weights of a vote are learned, not chosen
 
 ## The Leakage Trap
 
-* A member predicts its own training points too well: they were in its training set
-* Feed those predictions to the meta-learner and it trusts the members too much
+* A member predicts its own training points too well
+* Feed those predictions to the meta model and it trusts the members too much
 * **Out-of-fold predictions:** each example is predicted by a member that did not see it
 * A **blend** uses one hold-out set instead
 
 ## Stacking in Action: Leak or No Leak
 
-![](plots/07/e5_stack.pdf){height=4.3cm}
+![](plots/07/e5_stack.pdf)
 
-* Meta-learner on in-fold features: train accuracy $1.000$, 5-fold CV $1.000$, test $0.922$
-* On out-of-fold features: $0.910$, $0.914$, $0.922$: the honest estimate
-* Ten seeds: leak $0.880$, out-of-fold $0.888$, blend $0.883$
+* In-fold features: cross-validation (CV) MCC **1.000**, test 0.677
+* Out-of-fold features: CV 0.650, test 0.683: an honest estimate
+* Weights in-fold 4.2, 4.2, 0.65: the SVM is almost ignored
 
-## DEMO E5: Notebook
+<!-- defines: neural stacking, frozen -->
 
-`04_stacking_and_choice.ipynb` (E5) **shows** the leak, the blend and the meta-learner strength
+## Neural Stacking: Stack What Networks Learned
 
-**Look for:** the weights of each meta-learner and a noise level of 0.4
+Stacking reads predictions. **Neural stacking** reads the last hidden layers.
 
-# Using Ensembles
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cblue, text width=2.5cm] (a) {\textbf{NN A}\\ ReLU 128, 128, 128};
+  \node[fillbox=cgreen, text width=2.5cm, below=4mm of a] (b) {\textbf{NN B}\\ GELU 64, 64, 64, 64};
+  \node[fillbox=cgray, text width=1.5cm, right=7mm of a] (oa) {output removed};
+  \node[fillbox=cgray, text width=1.5cm, right=7mm of b] (ob) {output removed};
+  \node[fillbox=cpurple, text width=2cm, right=24mm of a, yshift=-7mm] (h) {\textbf{head}\\ 32 units, output};
+  \draw[flow] (a) -- (oa); \draw[flow] (b) -- (ob);
+  \draw[flow] (a.south east) -- (h.west); \draw[flow] (b.north east) -- (h.west);
+\end{tikzpicture}
+\end{center}
+```
 
-## A Protocol on Real Data
+* Blue and green are **frozen**: `fit` changes only the head
 
-Class 01 protocol: five-fold CV repeated twice ($J = 10$), corrected paired $t$-test against the best model.
+## The Recipe
 
-* Heart disease: vote 0.837, linear 0.835 ($p = 0.91$), forest 0.827, tree 0.761
-* Breast cancer: vote 0.979, tree 0.933; HistGB against tree $+0.035$ ($p = 0.036$)
+1. Build two networks of different topology
+2. Train both on the task; 20 % of the data stops them early
+3. Remove the output layers and freeze both
+4. Concatenate the last hidden layers; add one hidden layer and an output
+5. Train only this head, with the same early stopping
 
-## California Housing: Where Ensembles Win
+* Tables use tanh (256, 64) and swish (128, 128, 32)
+* Regression trains on squared error and reports MAE
 
-![](plots/07/e5b_scores.pdf){height=4.3cm}
+## The Formula
 
-* RMSE: stack 0.530, vote SVM + forest + HistGB 0.533, HistGB 0.543, forest 0.566, linear 0.661, tree 0.746
-* Fit per fold (typical): stack about 7 s, forest 2.2 s, HistGB 0.7 s, linear 0.004 s
-* HistGB against tree: $-0.203$ ($p < 0.001$); stack against HistGB: $-0.013$ ($p = 0.001$)
+$z_A(x)$, $z_B(x)$: last hidden layers of the frozen networks. $g$: the head, the only trainable part.
 
-## Calibration
+<!-- derivation: neural-stack -->
+$$
+\begin{aligned}
+\hat y(x) &= g\big(\,[\,z_A(x),\, z_B(x)\,]\,\big) && \text{(definition)}
+\end{aligned}
+$$
 
-![](plots/07/e5b_reliability.pdf){height=4.3cm}
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cblue, text width=1.6cm] (a) {$z_A(x)$};
+  \node[fillbox=cgreen, text width=1.6cm, right=2mm of a] (b) {$z_B(x)$};
+  \node[fillbox=cpurple, text width=1.2cm, right=8mm of b] (g) {$g$};
+  \node[fillbox=cgray, text width=1.2cm, right=8mm of g] (y) {$\hat y$};
+  \draw[flow] (b) -- (g); \draw[flow] (g) -- (y);
+\end{tikzpicture}
+\end{center}
+```
 
-* Spambase: log loss logistic $0.219$, forest $0.151$, HistGB $0.144$, AdaBoost $0.549$
-* AdaBoost probabilities are poorly calibrated (gap $0.354$): calibrate before using them
+* A hidden layer is a set of features built for this task
+* Two topologies give two feature sets: **diversity again**
 
-## Which Ensemble, When?
+## The Complete Gallery: Spiral
 
-| | single model | forest | boosting | stack |
-|:----------------|:-----:|:-----:|:-----:|:-----:|
-| accuracy | low | good | best | best |
-| tuning effort | low | low | high | high |
-| training cost | low | medium | medium | high |
-| readable | yes | no | no | no |
+![](plots/07/e5_gallery_spiral.pdf)
 
-* A stack gains little over HistGB (0.013 RMSE) for 10 times the fit time
-* Tabular data: start with a forest, then tune boosting
+## The Complete Gallery: Sawtooth
 
-## Ensembles and Project 1
+![](plots/07/e5_gallery_saw.pdf)
 
-* The symbolist (tree), the analogizer (KNN) and the connectionist (network) disagree in useful ways
-* A soft vote or a stack over them is an ensemble of the tribes
-* Check every claim with the Class 01 protocol, not one split
+## The Board Is Complete
+
+![](plots/07/e5_board_c.pdf)
+
+* Generated sets, defaults: voting 3, meta 3, bagging 1, boosting 1
+* Neural stack: first on XOR (0.725), 0.812 on the checkerboard
+
+## The Regression Board Is Complete
+
+![](plots/07/e5_board_r.pdf)
+
+* Smooth curves stay with the shallow MLP and the polynomial: the floor is reached
+* Friedman kinks: neural stack 0.525, the best of all
+
+## Does the Neural Stack Win?
+
+Neural stack minus the best other model, five seeds.
+
+![](plots/07/e5_gain_r.pdf)
+
+* Friedman kinks: $+0.045$ over NN B, won on 4 of 5 seeds
+* On one input, with 120 points, simple models are better
+* Friedman 1: NN B alone wins (0.304 against 0.338)
+
+## DEMO E5: `05_stacking_neural.ipynb`
+
+# Tuning
+
+## Parameters and Hyperparameters
+
+`fit` learns the parameters. You choose the hyperparameters before `fit`.
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cblue, text width=4.4cm] (a) {\textbf{parameters}\\ learned by \texttt{fit}: the splits of a tree};
+  \node[fillbox=corange, text width=4.4cm, right=4mm of a] (b) {\textbf{hyperparameters}\\ chosen first: depth, $\eta$, $B$, $k$};
+\end{tikzpicture}
+\end{center}
+```
+
+* Ensembles have many hyperparameters
+* An untuned comparison says little: this is why the earlier boards used defaults only to find weaknesses
+
+## Three Ways to Search
+
+Radial basis function (RBF) SVM, 25 trials; yellow is best.
+
+![](plots/07/e6_space.pdf)
+
+* A grid tries every combination; most points are wasted
+* Random points cover each hyperparameter better (Bergstra and Bengio)
+* **Tree-structured Parzen estimator** (TPE): near good trials
+
+## Learning from Past Trials
+
+**TPE** splits past trials into good and bad.
+
+![](plots/07/e6_search.pdf)
+
+* After 5 trials: grid 0.000, random 0.811, TPE 0.828
+* After 25 trials: 0.846, 0.848, 0.851
+* Optuna runs this search in a few lines
+
+## Pruning: Stop a Bad Trial Early
+
+XGBoost, 30 trials. Each trial reports its score every 25 trees.
+
+![](plots/07/e6_pruning.pdf)
+
+* Median pruner: stop a trial below the median of earlier trials
+* Same best MCC, 0.893: 3750 trees against 9000
+
+## The Best Score Is Optimistic
+
+Picking the best of many trials also picks lucky noise.
+
+![](plots/07/e6_nested.pdf)
+
+* Heart disease, 303 patients: inner 0.701, honest 0.654 at 100 trials
+* More trials give a larger gap: 0.005, 0.030, 0.047
+
+## Nested Cross-Validation
+
+Two loops: the inner one tunes, the outer one only scores.
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize]
+  \node[fillbox=cblue, text width=3.4cm] (o) {\textbf{outer fold}\\ training part};
+  \node[fillbox=cgreen, text width=2.2cm, right=4mm of o] (t) {\textbf{outer fold}\\ test part};
+  \node[fillbox=corange, text width=3.4cm, below=4mm of o] (i) {\textbf{inner CV}\\ tune on the training part};
+  \draw[flow] (o) -- (i);
+\end{tikzpicture}
+\end{center}
+```
+
+* The test part never touches the tuning
+* The same rule as the leak in stacking
+
+## Does Tuning Pay?
+
+Default against 25 Optuna trials, on at most 1500 rows, five folds.
+
+![](plots/07/e6_default.pdf)
+
+* k-NN gains most: 0.475 to 0.601 on wine
+* Boosting loses on wine: 0.609 to 0.579 with XGBoost
+* Tune on enough data: 1500 of 6497 rows was too few
+
+## DEMO E6: `06_tuning.ipynb`
+
+# Real Tables
+
+## From Toy Data to Real Tables
+
+Generated data showed where models break. Now: which family wins in practice?
+
+* 11 real tables, **all rows**, 5-fold CV, the same folds for every model
+* Optuna tunes on the training folds only; boosting stops early
+* Stacking uses five strong members: SVM, forest, boosting, k-NN, linear
+
+## Classification on Real Tables
+
+![](plots/07/e7_board_c.pdf)
+
+* Spambase: stacking 0.913, forest 0.903, one tree 0.813
+* Wine: stacking 0.632, SVM 0.379
+* Small, noisy tables: German credit, 0.394, leaves little to gain
+
+## Regression on Real Tables
+
+![](plots/07/e7_board_r.pdf)
+
+* California housing: stacking 0.301, HistGB 0.304, one tree 0.418
+* Concrete: XGBoost 2.619, stacking 2.799, SVM 3.819
+* Diabetes, 442 rows: neural stack 42.988, linear 44.270
+
+## Which Model Ranks First?
+
+Rank the models on each table, then average; a standard comparison (Demšar).
+
+![](plots/07/e7_rank.pdf)
+
+* Friedman test $p < 10^{-9}$: the models differ
+* Right of the dotted line: clearly behind stacking
+
+## How Much Does Each Family Gain?
+
+Best model of a family against the best shallow model, on each table.
+
+![](plots/07/e7_family.pdf){height=3.3cm}
+
+* Median gain: meta 5.4 %, boosting 3.2 %; up to 31.4 % on concrete
+* Small tables gain little: more members need more data
+
+# Is the Gain Real?
+
+## McNemar: Only the Disagreements Count
+
+Two fitted models, one test set: rows both get right say nothing [@dietterich1998].
+
+:::: {.columns}
+::: {.column width="42%"}
+![](plots/07/e8_table.pdf)
+:::
+::: {.column width="58%"}
+* Equal models: each disagreement is a coin flip
+* Spambase: 11 against 13, $p = 0.839$
+* MCC 0.912 and 0.915: no real gap
+:::
+::::
+
+## Which Gains Survive?
+
+Stacking against six rivals on a 30 % hold-out, with Holm's correction per table.
+
+![](plots/07/e8_grid.pdf){height=3.7cm}
+
+* Green: permutation test on the metric: swap predictions on random rows
+* Better in 35 of 66, never worse; forest and HistGB fall on 4 of 11 tables
+* McNemar agrees on 29 of 30: it counts errors, not MCC
+
+## Regression: No Right or Wrong
+
+No 2×2 table exists: McNemar's twin, the sign test, asks which model came **closer**.
+
+![](plots/07/e8_interval.pdf){height=2.9cm}
+
+* Sign test: closer more often; Wilcoxon: smaller by rank; permutation: lower MAE
+* Wine quality: k-NN is closer on 1133 of 1950 rows, yet MAE ties ($p = 0.138$)
+* California: $p = 0.001$ for a 0.51 % gain: real, but tiny
+
+## McNemar or Friedman?
+
+Neither is better: one family of tests, at two levels [@demsar2006].
+
+\begin{center}
+\begin{tikzpicture}[font=\footnotesize, every node/.style={minimum height=5.5mm, inner sep=1pt}]
+\node[anchor=west] at (0,1.2) {\textbf{Samples}};
+\node at (5.0,1.2) {\textbf{Two models}};
+\node at (8.1,1.2) {\textbf{Many models}};
+\draw[gray] (0,0.9) -- (9.6,0.9);
+\node[anchor=west] at (0,0.55) {rows, right or wrong};
+\node at (5.0,0.55) {McNemar};
+\node at (8.1,0.55) {Cochran's Q};
+\node[anchor=west] at (0,0) {rows, loss of each row};
+\node at (5.0,0) {sign test, Wilcoxon};
+\node at (8.1,0) {Friedman on rows};
+\node[anchor=west] at (0,-0.55) {tables, one score each};
+\node at (5.0,-0.55) {sign test, Wilcoxon};
+\node at (8.1,-0.55) {Friedman on tables};
+\end{tikzpicture}
+\end{center}
+
+* Spambase: Cochran's Q and Friedman on rows both give 124.9
+* McNemar: better **here**? Friedman: better **across tables**?
+
+## Do Not Test on the Folds
+
+Folds share training rows; at 0.00 neither model is better [@nadeau2003].
+
+![](plots/07/e8_calibration.pdf){height=3.3cm}
+
+* No true gap: plain t-test rejects 0.528, corrected 0.06, McNemar 0.042
+* At 0.40 the corrected test finds 0.475, McNemar 0.168
+
+## Across Tables: After Friedman
+
+A mean-rank pairwise test depends on the other models in the pool [@benavoli2016].
+
+* Wilcoxon with Holm: 11 of 15 models behind stacking; Nemenyi: 6
+* Stacking was picked **after** E7: this correction does not pay for that
+* All 120 pairs with 11 tables: smallest possible Holm $p$ is 0.117
+* Bayesian signed-rank: P(better by over 1 %) at least 0.967 [@benavoli2017]
+
+## DEMO E7: `07_real_tables.ipynb`
+
+Then `08_significance.ipynb`: the tests of this section.
 
 # Summary
 
 ## Summary: the Map
 
-| | bagging, forest | boosting | stacking |
-|:--------------|:---------------|:----------------|:--------------|
-| idea | average resamples | fix errors in turn | learn the mix |
-| cuts | variance | bias | both |
-| costs | memory, time | tuning, noise | time, leakage |
+| | voting | bagging | boosting | meta |
+|:----------|:---------------------|:---------------------|:----------------------|:-----------------|
+| idea | combine outputs | average resamples | fix errors in turn | learn the mix |
+| cuts | variance | variance | bias | both |
+| costs | keeps bad members | memory | tuning, noise | time, leakage |
 
 ## Key Takeaways: Ensembles
 
 * A crowd helps only if members are **better than chance and different**
-* Averaging leaves a floor $\rho v$: lower $\rho$ with random feature subsets
-* Bagging needs unstable learners; boosting needs a stopping rule
-* Stacking needs out-of-fold predictions
-* Near the Bayes ceiling no ensemble wins: say so, and test with $J$ scores, not one split
+* On real tables stacking ranks first, then boosting, forests and votes
+* Averaging leaves a floor $\rho v$: lower $\rho$ with diverse members
+* k-NN with $k > 1$ is a vote; bagging needs unstable learners
+* Boosting needs a stopping rule; stacking needs out-of-fold predictions
+* Tune with nested CV: the best validation score is optimistic
+* Test gains: McNemar on one test set, permutation for MCC and MAE
+* Near the ceiling no ensemble wins
 
 ## Lab 07: Build It from Scratch
 
 | Part | Task | twin |
-|:-----------:|:-------------------------------------------------|:------------------------------|
+|:---------:|:-----------------------------------------|:---------------------------------------|
 | A | Boundary gallery and a vote of three models | `VotingClassifier` |
 | B | Bagging by hand: bootstrap, vote, OOB | `BaggingClassifier`, `RandomForestClassifier` |
 | C | AdaBoost with stumps | `AdaBoostClassifier` |
@@ -638,7 +974,7 @@ Class 01 protocol: five-fold CV repeated twice ($J = 10$), corrected paired $t$-
 * **In class:** Parts A to D (60 minutes); **at home:** Parts E and F
 * Guide `practice/07_ensembles.pdf`; notebook `lab07_ensembles.ipynb`
 
-<!-- cites: @breiman1996 @breiman2001 @freund1997 @friedman2001 @wolpert1992 @chen2016 @ke2017 @dietterich2000 @hastie2009 @grinsztajn2022 -->
+<!-- cites: @breiman1996 @breiman2001 @freund1997 @friedman2001 @bergstra2012 @akiba2019 @demsar2006 @wolpert1992 @chen2016 @hastie2009 @grinsztajn2022 -->
 
 <!-- refs:begin -->
 ## References
@@ -647,19 +983,29 @@ Class 01 protocol: five-fold CV repeated twice ($J = 10$), corrected paired $t$-
 ::: {.column width="50%"}
 \fontsize{5.5}{6.4}\selectfont\setlength{\parskip}{2.5pt}
 
+Akiba, Takuya, Shotaro Sano, Toshihiko Yanase, Takeru Ohta, and Masanori Koyama. 2019. “Optuna: A Next-Generation Hyperparameter Optimization Framework.” ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, 2623–31.
+
+Benavoli, Alessio, Giorgio Corani, Janez Demšar, and Marco Zaffalon. 2017. “Time for a Change: A Tutorial for Comparing Multiple Classifiers Through Bayesian Analysis.” Journal of Machine Learning Research 18 (77): 1–36.
+
+Benavoli, Alessio, Giorgio Corani, and Francesca Mangili. 2016. “Should We Really Use Post-Hoc Tests Based on Mean-Ranks?” Journal of Machine Learning Research 17 (5): 1–10.
+
+Bergstra, James, and Yoshua Bengio. 2012. “Random Search for Hyper-Parameter Optimization.” Journal of Machine Learning Research 13: 281–305.
+
 Breiman, Leo. 1996. “Bagging Predictors.” Machine Learning 24 (2): 123–40.
 
 Breiman, Leo. 2001. “Random Forests.” Machine Learning 45 (1): 5–32.
 
 Chen, Tianqi, and Carlos Guestrin. 2016. “XGBoost: A Scalable Tree Boosting System.” ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, 785–94.
 
-Dietterich, Thomas G. 2000. “Ensemble Methods in Machine Learning.” International Workshop on Multiple Classifier Systems, 1–15.
-
-Freund, Yoav, and Robert E. Schapire. 1997. “A Decision-Theoretic Generalization of on-Line Learning and an Application to Boosting.” Journal of Computer and System Sciences 55 (1): 119–39.
+Demšar, Janez. 2006. “Statistical Comparisons of Classifiers over Multiple Data Sets.” Journal of Machine Learning Research 7: 1–30.
 
 :::
 ::: {.column width="50%"}
 \fontsize{5.5}{6.4}\selectfont\setlength{\parskip}{2.5pt}
+
+Dietterich, Thomas G. 1998. “Approximate Statistical Tests for Comparing Supervised Classification Learning Algorithms.” Neural Computation 10 (7): 1895–923.
+
+Freund, Yoav, and Robert E. Schapire. 1997. “A Decision-Theoretic Generalization of on-Line Learning and an Application to Boosting.” Journal of Computer and System Sciences 55 (1): 119–39.
 
 Friedman, Jerome H. 2001. “Greedy Function Approximation: A Gradient Boosting Machine.” The Annals of Statistics 29 (5): 1189–232.
 
@@ -667,7 +1013,7 @@ Grinsztajn, Léo, Edouard Oyallon, and Gaël Varoquaux. 2022. “Why Do Tree-Bas
 
 Hastie, Trevor, Robert Tibshirani, and Jerome Friedman. 2009. The Elements of Statistical Learning. 2nd ed. Springer.
 
-Ke, Guolin, Qi Meng, Thomas Finley, et al. 2017. “LightGBM: A Highly Efficient Gradient Boosting Decision Tree.” Advances in Neural Information Processing Systems 30.
+Nadeau, Claude, and Yoshua Bengio. 2003. “Inference for the Generalization Error.” Machine Learning 52 (3): 239–81.
 
 Wolpert, David H. 1992. “Stacked Generalization.” Neural Networks 5 (2): 241–59.
 

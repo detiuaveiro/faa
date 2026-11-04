@@ -101,3 +101,40 @@ def real_1d_regression(seed: int = 0, n: int = 300, q: float = 0.75):
         x[tr][:, None], y[tr], x[order][:, None], y[order],
         (float(x.min()), cut), (float(x.min()), float(x.max())),
     )  # fmt: skip
+
+
+def wine_good() -> tuple[np.ndarray, np.ndarray]:
+    """Wine quality as a task of two classes: 1 for a score of 6 or more."""
+    X, y, _ = load_table("wine_quality", "quality")
+    return X, (y >= 6).astype(int)
+
+
+def german_bad() -> tuple[np.ndarray, np.ndarray]:
+    """German credit: 1 for a bad risk, the rare class (30 %)."""
+    X, y, _ = load_table("german_credit", "class")
+    return X, (y == "bad").astype(int)
+
+
+def regression(name: str, target: str):
+    """A loader of one regression table, with a float target."""
+
+    def load() -> tuple[np.ndarray, np.ndarray]:
+        X, y, _ = load_table(name, target)
+        return X, y.astype(float)
+
+    return load
+
+
+TABLES = {
+    "spambase": (load_spam, "c"),
+    "wine, good or not": (wine_good, "c"),
+    "German credit": (german_bad, "c"),
+    "breast cancer": (load_breast, "c"),
+    "heart disease": (load_heart, "c"),
+    "California housing": (load_california, "r"),
+    "wine quality": (regression("wine_quality", "quality"), "r"),
+    "abalone": (regression("abalone", "rings"), "r"),
+    "concrete": (regression("concrete", "strength"), "r"),
+    "diabetes": (regression("diabetes", "target"), "r"),
+    "auto mpg": (regression("auto_mpg", "mpg"), "r"),
+}  # name: (loader, task), "c" for MCC and "r" for MAE

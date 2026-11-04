@@ -940,7 +940,7 @@ The corrected resampled $t$-test of Class 05: neighbours against three learners;
 
 ![](plots/06/k5_ttest.pdf)
 
-* Neighbours clearly **beat a single tree** on four of five sets
+* Neighbours **beat a single tree** on three of six sets
 * Against the support vector machine and logistic regression the gaps are small
 
 ## Summary: a Decision Guide
