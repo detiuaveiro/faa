@@ -28,17 +28,17 @@ symbols:
   θ_star: {kind: scalar, meaning: best parameters, first: "Fitting Means Minimizing"}
   # N2: information
   M:      {kind: scalar, meaning: model, first: "Notation N2"}
-  x:      {kind: scalar, meaning: an outcome or example, first: "Notation N2"}
+  x:      {kind: vector, shape: d, meaning: observed feature vector or single outcome, first: "Notation"}
   u:      {kind: scalar, meaning: a string, first: "Kolmogorov Complexity"}
   c:      {kind: scalar, meaning: constant of the error cost, first: "Where BIC Comes From"}
   π:      {kind: scalar, meaning: the constant pi, first: "Where BIC Comes From"}
-  λ:      {kind: scalar, meaning: regularization strength, first: "Regularization"}
+  λ:      {kind: scalar, meaning: regularization strength, first: "Notation"}
   Ω:      {kind: scalar, meaning: penalty on complex models, first: "Regularization"}
   # N3a: scores and intervals
   k:      {kind: scalar, meaning: number of folds, first: "Notation N3a"}
   s_i:    {kind: scalar, meaning: score of fold i, first: "Notation N3a"}
   s_bar:  {kind: scalar, meaning: mean of the fold scores, first: "Notation N3a"}
-  s:      {kind: scalar, meaning: standard deviation of the fold scores, first: "Notation N3a"}
+  s:      {kind: vector, shape: c, meaning: vector of independent sources, first: "The ICA Model"}
   SE:     {kind: scalar, meaning: standard error, first: "Notation N3a"}
   CI:     {kind: scalar, meaning: confidence interval, first: "Notation N3a"}
   t_0_975_kminus1: {kind: scalar, meaning: t quantile for the 95% interval, first: "The Confidence Interval"}
@@ -91,4 +91,22 @@ symbols:
   ξ:      {kind: scalar, meaning: share left out of a bootstrap sample, first: "Notation N7b"}
   E_b:    {kind: scalar, meaning: exponential loss of member b, first: "Notation N7b"}
   Z_b:    {kind: scalar, meaning: weight normaliser, first: "Notation N7b"}
-functions: [p, h, H, K, E, f, f_hat, L, L_λ, l, ℓ, Ω]
+  λ_1:    {kind: scalar, meaning: largest eigenvalue of the covariance, first: "Notation N9"}
+  C:      {kind: matrix, shape: d x d, meaning: covariance of the centred data, first: "Notation N9"}
+  w_j:    {kind: vector, shape: d, meaning: PCA direction (unit vector), first: "Notation N9"}
+  w:      {kind: vector, shape: d, meaning: PCA direction of unit length, first: "Variance Is Reconstruction Error"}
+  h_j:    {kind: vector, shape: c, meaning: one row of H, the weights of one example, first: "The Shared Skeleton"}
+  j:      {kind: scalar, meaning: component index, first: "The Shared Skeleton"}
+  I:      {kind: matrix, shape: d x d, meaning: identity matrix, first: "Notation N9"}
+  tr:     {kind: scalar, meaning: trace of a square matrix, first: "Variance Is Reconstruction Error"}
+  W:      {kind: matrix, shape: d x c, meaning: component matrix, one column per part or direction, first: "The Shared Skeleton"}
+  H:      {kind: matrix, shape: c x n, meaning: weight matrix, how much of each component every example has, first: "The Shared Skeleton"}
+  z:      {kind: vector, shape: d, meaning: whitened projection of x, first: "Whitening: the Shared First Step"}
+  U:      {kind: matrix, meaning: orthogonal rotation after whitening, first: "The ICA Model"}
+  V:      {kind: matrix, meaning: whitening matrix (PCA eigenvectors), first: "The ICA Model"}
+  A:      {kind: matrix, meaning: mixing matrix of the ICA model, first: "What Is Blind?"}
+  S:      {kind: matrix, meaning: source matrix, one row per source, first: "What Is Blind?"}
+  J_4:    {kind: scalar, meaning: kurtosis proxy objective at unit w, first: "The Kurtosis Gradient, From the Objective"}
+  L:      {kind: scalar, meaning: Lagrangian of the constrained PCA problem, first: "Variance Is Reconstruction Error"}
+  g:      {kind: scalar, meaning: smooth odd function of the negentropy approximation, first: "The Objective Families, Precisely"}
+functions: [p, h, H, K, E, f, f_hat, L, L_λ, l, ℓ, Ω, tr, J_4]

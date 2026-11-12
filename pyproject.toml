@@ -54,6 +54,7 @@ ignore = [
     "notebooks/05-svm-neural-networks", "solutions/lab05_svm_neural_networks_solution.ipynb",
     "notebooks/06-trees-knn", "solutions/lab06_trees_knn_solution.ipynb",
     "notebooks/07-ensembles", "solutions/lab07_ensembles_solution.ipynb", "solutions/lab07_utils.py",
+    "notebooks/09-bss", "solutions/lab09_bss_solution.ipynb", "solutions/lab09_utils.py",
 ]
 venvPath = "."
 venv = "venv"

@@ -138,3 +138,25 @@ TABLES = {
     "diabetes": (regression("diabetes", "target"), "r"),
     "auto mpg": (regression("auto_mpg", "mpg"), "r"),
 }  # name: (loader, task), "c" for MCC and "r" for MAE
+
+
+def load_movielens() -> tuple[np.ndarray, np.ndarray, list[str]]:
+    """MovieLens 100K as a users x items matrix of stars: R (943 x 1682, NaN = not rated), the observed mask and the titles."""
+    df = pl.read_csv(data_dir() / "movielens_100k.csv.zst")
+    users, items = df["user_id"].max(), df["item_id"].max()
+    R = np.full((users, items), np.nan)  # type: ignore[arg-type]
+    R[df["user_id"].to_numpy() - 1, df["item_id"].to_numpy() - 1] = df["rating"].to_numpy()
+    titles = df.group_by("item_id").agg(pl.col("title").first()).sort("item_id")["title"].to_list()
+    return R, ~np.isnan(R), titles
+
+
+def load_indoor_climate() -> tuple[np.ndarray, list[str]]:
+    """Indoor climate of a house, hourly: X (16 series x 3290 hours; temperatures T1-T9 and humidities RH_1-RH_9 of eight rooms), series names."""
+    df = pl.read_csv(data_dir() / "indoor_climate.csv.zst").drop("date")
+    return df.to_numpy().T.astype(float), df.columns
+
+
+def load_news() -> tuple[list[str], np.ndarray]:
+    """BBC news, 1000 articles (200 per category: business, entertainment, politics, sport, tech): the texts and their categories."""
+    df = pl.read_csv(data_dir() / "bbc_news.csv.zst")
+    return df["text"].to_list(), df["category"].to_numpy()

@@ -190,6 +190,25 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 
 ---
 
+### Class 09 — Blind Signal Separation
+
+**Slides:** [`slides/09_blind_signal_separation.pdf`](slides/09_blind_signal_separation.pdf) · **Lab guide:** [`practice/09_blind_signal_separation.pdf`](practice/09_blind_signal_separation.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| Mixtures and PCA | Two microphones, two sources; PCA on the cloud, EVR, reconstruction, why orthogonal directions cannot separate | [`01_mixtures_pca.ipynb`](notebooks/09-bss/01_mixtures_pca.ipynb) — **B1** |
+| ICA | Centring, whitening, kurtosis and negentropy, FastICA, permutation and sign with `match`, SNR | [`02_ica.ipynb`](notebooks/09-bss/02_ica.ipynb) — **C1** |
+| NMF | Non-negative parts of a digit, multiplicative updates, MU and HALS, NNDSVD init, KL and Itakura–Saito | [`03_nmf.ipynb`](notebooks/09-bss/03_nmf.ipynb) — **D1** |
+| LSI and CF | Term-document matrix, tf-idf, latent topics, collaborative filtering with missing values (`rwnmf`), rank sweep | [`04_lsi_cf.ipynb`](notebooks/09-bss/04_lsi_cf.ipynb) — **E2** |
+| Audio | Two-sine mixtures as signals, PCA, ICA and NMF compared by correlation and SNR | [`05_audio.ipynb`](notebooks/09-bss/05_audio.ipynb) — **E1** |
+| Use cases | One task, three methods: spectrogram notes, digit strokes, denoising, classifier features, topics, soft clusters, blink removal, anomaly scores, imputation with every pyNNMF solver | [`06_usecases.ipynb`](notebooks/09-bss/06_usecases.ipynb) — **E3** |
+| Imputation | Collaborative filtering with baselines, rank and regularisation, cold start and ranking; LSI and NMF topics on BBC news, queries in the latent space; time series with block gaps and gap alignment; nine NMF starts on four problems | [`07_imputation.ipynb`](notebooks/09-bss/07_imputation.ipynb) — **E4** |
+
+**Data:** two-sine mixtures and the ratings toy from `faa.bss`; digits, MovieLens 100K, BBC news and the indoor climate series from [`datasets/`](datasets/).
+**Lab:** [`lab09_bss.ipynb`](notebooks/09-bss/lab09_bss.ipynb) (helpers in `lab09_utils.py`): Parts A to D in class (60 minutes), Parts E and F at home; PCA by hand on the cloud and the digits, ICA by one kurtosis ascent, NMF multiplicative updates with the learned parts, collaborative filtering with missing values, LSI, and the use-case tournament (PCA, ICA and NMF on the same task); solved and explained in [`solutions/lab09_bss_solution.ipynb`](solutions/lab09_bss_solution.ipynb).
+
+---
+
 ## 5. Evaluation
 
 Students choose **one** of two modes.
