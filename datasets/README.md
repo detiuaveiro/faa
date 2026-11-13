@@ -25,6 +25,7 @@ Missing values are empty fields (polars reads them as `null`). The last column o
 | `movielens_100k` | collaborative filtering | 100000 × 5 | `rating` (1-5 stars) | long format: `user_id` (943 users), `item_id` (1682 films), `title`, `timestamp`, `rating`; every user has at least 20 ratings, 6.3% of the user × film matrix is observed. Used in Class 09 (`faa.data.load_movielens`) |
 | `bbc_news` | text classification, topic modelling | 1000 × 2 | `category` (business, entertainment, politics, sport, tech; 200 each) | `text` is a whole article (about 2300 characters); a stratified subset of the 2225 BBC articles of 2004-2005, duplicates removed. Used in Class 09 (`faa.data.load_news`) |
 | `indoor_climate` | time-series imputation | 3290 × 17 | none | hourly means of the 8 room temperatures `T1`-`T5`, `T7`-`T9` (°C) and the 8 room humidities `RH_1`-`RH_5`, `RH_7`-`RH_9` (%) of one house, 11 Jan to 27 May 2016; no missing values (Class 09 hides blocks of hours itself; `faa.data.load_indoor_climate`) |
+| `bss/` | blind source separation | 3 WAV (22 050 Hz, mono, about 1.7 s) + 3 JPEG (200 × 200, grey) | none | three short voice lines and three pictures that Class 09 mixes and separates (`faa.data.load_voices`, `faa.data.load_pictures`) |
 
 ## Sources
 
@@ -46,3 +47,4 @@ The OpenML files were downloaded through its API and column names were cleaned (
 | `movielens_100k` | Harper and Konstan, *The MovieLens datasets: history and context*, ACM TiiS 5(4), 2015; GroupLens [MovieLens 100K](https://grouplens.org/datasets/movielens/100k/) (`u.data` joined with the titles of `u.item`; the data may be redistributed under the GroupLens conditions, research use, with this attribution) |
 | `indoor_climate` | Candanedo, Feldheim and Deramaix, *Data driven prediction models of energy use of appliances in a low-energy house*, Energy and Buildings 140, 2017; UCI [Appliances energy prediction](https://archive.ics.uci.edu/dataset/374) (CC BY 4.0), 10-minute readings averaged per hour |
 | `bbc_news` | Greene and Cunningham, *Practical solutions to the problem of diagonal dominance in kernel document clustering*, ICML 2006; BBC News dataset (non-commercial, research use), subset of 200 articles per category |
+| `bss/` | the clips and pictures of the *ml101* course (Mário Antunes, [github.com/mariolpantunes/ml101](https://github.com/mariolpantunes/ml101)): voice lines first shown in the FastICA tutorial of M. Scipio; short excerpts for teaching, rights stay with their owners |

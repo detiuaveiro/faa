@@ -160,3 +160,23 @@ def load_news() -> tuple[list[str], np.ndarray]:
     """BBC news, 1000 articles (200 per category: business, entertainment, politics, sport, tech): the texts and their categories."""
     df = pl.read_csv(data_dir() / "bbc_news.csv.zst")
     return df["text"].to_list(), df["category"].to_numpy()
+
+
+def load_voices() -> tuple[np.ndarray, int]:
+    """Three short voice clips (datasets/bss/voice_*.wav), mono: S (3, n) in [-1, 1], zero-padded to the longest, and the sample rate."""
+    from scipy.io import wavfile
+
+    clips, rate = [], 0
+    for i in (1, 2, 3):
+        rate, x = wavfile.read(data_dir() / "bss" / f"voice_{i}.wav")
+        x = x.astype(float)
+        clips.append(x / np.abs(x).max())
+    n = max(len(c) for c in clips)
+    return np.array([np.pad(c, (0, n - len(c))) for c in clips]), int(rate)
+
+
+def load_pictures() -> np.ndarray:
+    """Three grey pictures (datasets/bss/picture_*.jpg), 200 x 200: S (3, 200, 200) in [0, 1]."""
+    from PIL import Image
+
+    return np.array([np.asarray(Image.open(data_dir() / "bss" / f"picture_{i}.jpg").convert("L"), dtype=float) / 255.0 for i in (1, 2, 3)])
