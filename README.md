@@ -209,6 +209,25 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 
 ---
 
+### Class 10 — Soft and Hard Clustering
+
+**Slides:** [`slides/10_clustering.pdf`](slides/10_clustering.pdf) · **Lab guide:** [`practice/10_clustering.pdf`](practice/10_clustering.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| Hard and soft | One-hot $z_{ik}$ against memberships $u_{ik}$, entropy, overlap sweep, NMF as a soft clustering and the scale of its parts | [`01_hard_soft.ipynb`](notebooks/10-clustering/01_hard_soft.ipynb) — **A1** |
+| $k$-means and hierarchical | Lloyd's loop, $k$-means++, Voronoi cells, four linkages, dendrogram cut, determinism, Ward against $k$-means, single linkage against DBSCAN | [`02_kmeans_hier.ipynb`](notebooks/10-clustering/02_kmeans_hier.ipynb) — **B1** |
+| DBSCAN | Core, border and noise, $\epsilon$ and `min_samples` sweeps, the $k$-distance graph and its knee (`kneeliverse`), varying densities, high dimension | [`03_dbscan.ipynb`](notebooks/10-clustering/03_dbscan.ipynb) — **C1** |
+| Mixtures and fuzzy $c$-means | EM by hand, one E-step, four covariance structures, the fuzzifier, FCM against GMM against NMF, bad starts, collapsing components | [`04_gmm_fcm.ipynb`](notebooks/10-clustering/04_gmm_fcm.ipynb) — **D1** |
+| Benchmark | Seven methods on six toy sets (moons, rings, blobs, stretched, unequal, noise), ten seeds, noise and scale | [`05_benchmark.ipynb`](notebooks/10-clustering/05_benchmark.ipynb) — **E1** |
+| Choosing $k$ | Elbow with the Kneedle and L-method detectors of `kneeliverse`, silhouette, Calinski–Harabasz, Davies–Bouldin, gap statistic, AIC and BIC, stability over draws | [`06_choosing_k.ipynb`](notebooks/10-clustering/06_choosing_k.ipynb) — **F1** |
+| Use cases | Wine segments, news topics, indoor-climate anomalies, a digit taxonomy | [`07_usecases.ipynb`](notebooks/10-clustering/07_usecases.ipynb) — **G1** |
+
+**Data:** the six toy sets and `fcm` from `faa.clustering`; wine quality, BBC news, digits and the indoor climate series from [`datasets/`](datasets/).
+**Lab:** [`lab10_clustering.ipynb`](notebooks/10-clustering/lab10_clustering.ipynb) (helpers in `lab10_utils.py`): Parts A to D in class (60 minutes), Parts E and F at home; NMF memberships, $k$-means with $k$-means++, the $k$-distance knee and DBSCAN, one EM step and the BIC, choosing $k$ on the wines and a six-method case study; solved and explained in [`solutions/lab10_clustering_solution.ipynb`](solutions/lab10_clustering_solution.ipynb).
+
+---
+
 ## 5. Evaluation
 
 Students choose **one** of two modes.
