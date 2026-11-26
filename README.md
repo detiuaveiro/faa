@@ -58,7 +58,7 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 | 09 | 12 Nov | 13 Nov | T7: Blind Signal Separation | **Project 2 released** |
 | 10 | 19 Nov | 20 Nov | T8: Soft/Hard Clustering | |
 | 11 | 26 Nov | 27 Nov | T9: AutoEncoders and Semi-Supervised Learning | |
-| 12 | 03 Dec | 04 Dec | T9: Transformers and JEPA | |
+| 12 | 03 Dec | 04 Dec | T9: Networks with Structure: CNN, RNN (LSTM, GRU) and the Transformer | |
 | 13 | 10 Dec | 11 Dec | T10: Reinforcement Learning | Project 2 clinic |
 | 14 | 17 Dec | 18 Dec | **Test 2** (Topics 7–10) + Project 2 presentations | **Project 2 due** |
 
@@ -225,6 +225,41 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 
 **Data:** the six toy sets and `fcm` from `faa.clustering`; wine quality, BBC news, digits and the indoor climate series from [`datasets/`](datasets/).
 **Lab:** [`lab10_clustering.ipynb`](notebooks/10-clustering/lab10_clustering.ipynb) (helpers in `lab10_utils.py`): Parts A to D in class (60 minutes), Parts E and F at home; NMF memberships, $k$-means with $k$-means++, the $k$-distance knee and DBSCAN, one EM step and the BIC, choosing $k$ on the wines and a six-method case study; solved and explained in [`solutions/lab10_clustering_solution.ipynb`](solutions/lab10_clustering_solution.ipynb).
+
+### Class 11 — AutoEncoders and Semi-Supervised Learning
+
+**Slides:** [`slides/11_autoencoders.pdf`](slides/11_autoencoders.pdf) · **Lab guide:** [`practice/11_autoencoders.pdf`](practice/11_autoencoders.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| Autoencoder | A unit by hand, the linear autoencoder against PCA (error and principal angle), depth against code size, reconstructions, two-dimensional codes | [`01_autoencoder.ipynb`](notebooks/11-autoencoders/01_autoencoder.ipynb) — **A1–A2** |
+| Variants and anomalies | Denoising, sparse codes, the reconstruction error as an anomaly score on the digits and on the indoor climate, a code as large as the input | [`02_variants.ipynb`](notebooks/11-autoencoders/02_variants.ipynb) — **B1–B2** |
+| Text compressor | A temporal (1-D convolutional) autoencoder trained on several text files, 4-bit codes, the command line `python -m faa.textae`, gzip and lzma as the lossless reference, code size, text it never saw | [`03_text_compression.ipynb`](notebooks/11-autoencoders/03_text_compression.ipynb) — **C1–C2** |
+| Few labels | Learning curve of the digits against the number of labels, the spread over draws, the unlabelled digits as images and on a map, two moons with two labels | [`04_few_labels.ipynb`](notebooks/11-autoencoders/04_few_labels.ipynb) — **D1–D2** |
+| Pseudo-labels | Self-training with a threshold, rounds, confirmation bias against wrong labels, co-training with two views, the scikit-learn twin | [`05_self_training.ipynb`](notebooks/11-autoencoders/05_self_training.ipynb) — **E1–E2** |
+| Label spreading | The kNN graph, the closed form $(I - \alpha S)^{-1} Y_0$, $\alpha$ and $k$, touching moons, 6000 news headlines with 32 labels, the scikit-learn twin | [`06_label_spreading.ipynb`](notebooks/11-autoencoders/06_label_spreading.ipynb) — **F1–F2** |
+| Pretraining | Frozen and fine-tuned encoders against pixels and scratch, unlabelled rows used, masking rate, a pretext unrelated to the task, all methods on 50 labels | [`07_pretraining.ipynb`](notebooks/11-autoencoders/07_pretraining.ipynb) — **G1–G2** |
+
+**Data:** the digits, the indoor climate series, BBC news and AG News from [`datasets/`](datasets/); the two moons from scikit-learn; the graph, the self-training and co-training loops and the Keras autoencoders from `faa.semisup`; the text compressor from `faa.textae`.
+**Lab:** [`lab11_autoencoders.ipynb`](notebooks/11-autoencoders/lab11_autoencoders.ipynb) (helpers in `lab11_utils.py`): Parts A to D in class (60 minutes), Parts E and F at home; the pseudo-label loop, label spreading, the gradient of a linear autoencoder (each against its twin), the threshold of an anomaly detector, a probe on a pretrained code and a denoising autoencoder; solved and explained in [`solutions/lab11_autoencoders_solution.ipynb`](solutions/lab11_autoencoders_solution.ipynb).
+
+### Class 12 — Networks with Structure: CNN, RNN (LSTM, GRU) and the Transformer
+
+**Slides:** [`slides/12_neural_networks.pdf`](slides/12_neural_networks.pdf) · **Lab guide:** [`practice/12_neural_networks.pdf`](practice/12_neural_networks.pdf)
+
+| Block | Contents | Demo notebook |
+|:--|:--|:--|
+| Limits of the MLP | Weights of a dense layer on images, shuffled pixels, shifted digits, the order task on a flattened sequence | [`01_mlp_limits.ipynb`](notebooks/12-neural-networks/01_mlp_limits.ipynb) — **M1–M2** |
+| Convolution | A convolution by hand, three edge and blur filters, output size against Keras, equivariance, the kernel gradient against `jax.grad`, receptive field, pooling, stride | [`02_convolution.ipynb`](notebooks/12-neural-networks/02_convolution.ipynb) — **C1–C2** |
+| CNN | MLP against CNN on the digits, learned filters, shifted test digits, augmentation, global average pool, architecture variants | [`03_cnn_digits.ipynb`](notebooks/12-neural-networks/03_cnn_digits.ipynb) — **C3–C4** |
+| Recurrent networks | An RNN by hand against Keras, weights of RNN, LSTM and GRU, the gradient through time against `jax.jacobian`, the bound, clipping | [`04_rnn.ipynb`](notebooks/12-neural-networks/04_rnn.ipynb) — **R1–R2** |
+| LSTM and GRU | One step of each by hand, the forget gate and the lag, memory against the lag, gates of a trained LSTM, forecasting a room temperature | [`05_lstm_gru.ipynb`](notebooks/12-neural-networks/05_lstm_gru.ipynb) — **G1–G3** |
+| Attention | Attention by hand against `MultiHeadAttention`, masks, the $\sqrt{d_k}$ scale, permutation equivariance, positional encoding, cost against the length | [`06_attention.ipynb`](notebooks/12-neural-networks/06_attention.ipynb) — **T1–T2** |
+| Transformer | Weights of a block ($12d^2 + 13d$) against Keras, memory at lag 100, where the last position looks, the order task with and without positions, forecasting, BBC news against tf-idf, and a learning curve on 32 000 AG News articles | [`07_transformer.ipynb`](notebooks/12-neural-networks/07_transformer.ipynb) — **T3–T4** |
+| Forecasting and stacking | The Lorenz series (a nonlinear series where ridge fails), MLP, RNN, LSTM and GRU over 3 seeds, then the three recurrent encoders frozen and an MLP head trained on their 96 features | [`08_forecast_stack.ipynb`](notebooks/12-neural-networks/08_forecast_stack.ipynb) — **F1–F2** |
+
+**Data:** digits as images, the indoor climate series, the BBC news and AG News from [`datasets/`](datasets/); the memory and order tasks, the Lorenz series and the reference layers from `faa.neural`.
+**Lab:** [`lab12_neural_networks.ipynb`](notebooks/12-neural-networks/lab12_neural_networks.ipynb) (helpers in `lab12_utils.py`): Parts A to D in class (60 minutes), Parts E and F at home; a convolution and a pooling, an LSTM step and a GRU step, scaled dot-product attention with a mask and positions (each against its Keras twin with the same weights), the memory task for four models, CNN against MLP on shifted digits and a forecast challenge; solved and explained in [`solutions/lab12_neural_networks_solution.ipynb`](solutions/lab12_neural_networks_solution.ipynb).
 
 ---
 

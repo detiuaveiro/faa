@@ -162,6 +162,13 @@ def load_news() -> tuple[list[str], np.ndarray]:
     return df["text"].to_list(), df["category"].to_numpy()
 
 
+def load_ag_news() -> tuple[list[str], np.ndarray, list[str], np.ndarray]:
+    """AG News headlines with their first sentence (36 000, 9 000 per category: world, sports, business, scitech): training texts and labels, then test texts and labels (32 000 / 4 000)."""
+    df = pl.read_csv(data_dir() / "ag_news.csv.zst")
+    tr, te = df.filter(pl.col("split") == "train"), df.filter(pl.col("split") == "test")
+    return tr["text"].to_list(), tr["category"].to_numpy(), te["text"].to_list(), te["category"].to_numpy()
+
+
 def load_voices() -> tuple[np.ndarray, int]:
     """Three short voice clips (datasets/bss/voice_*.wav), mono: S (3, n) in [-1, 1], zero-padded to the longest, and the sample rate."""
     from scipy.io import wavfile
