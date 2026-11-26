@@ -60,7 +60,7 @@ Classes run from **14 September** to **22 December 2026**. **TP1** meets on Thur
 | 11 | 26 Nov | 27 Nov | T9: AutoEncoders and Semi-Supervised Learning | |
 | 12 | 03 Dec | 04 Dec | T9: Networks with Structure: CNN, RNN (LSTM, GRU) and the Transformer | |
 | 13 | 10 Dec | 11 Dec | T10: Reinforcement Learning | Project 2 clinic |
-| 14 | 17 Dec | 18 Dec | **Test 2** (Topics 7–10) + Project 2 presentations | **Project 2 due** |
+| 14 | 17 Dec | 18 Dec | **Test 2** (Topics 7–10) + Project 2 delivery | **Project 2 due** |
 
 ---
 
@@ -274,7 +274,7 @@ Students choose **one** of two modes.
 | Theoretical Test 1 | 25% | Class 08 (05/06 Nov 2026), Topics 1–6 |
 | Theoretical Test 2 | 25% | Class 14 (17/18 Dec 2026), Topics 7–10 |
 | [Project 1](projects/project01.pdf): the five classes of learners | 25% | Released Class 03 (01/02 Oct), due Class 08 (05/06 Nov) |
-| [Project 2](projects/project02.pdf): a game-playing agent | 25% | Released Class 09 (12/13 Nov), due Class 14 (17/18 Dec) |
+| [Project 2](projects/project02.pdf): your own project or a Space Invaders agent | 25% | Released Class 09 (12/13 Nov), due Class 14 (17/18 Dec) |
 
 ### Final Evaluation
 
